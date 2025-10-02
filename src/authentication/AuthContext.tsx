@@ -1,30 +1,10 @@
 import axiosInstance from "@/api/axios";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import { tokenService } from "@/authentication/tokenService";
+import { AuthContext } from "@/authentication/context";
+import { redirectService } from "@/authentication/redirectService";
+import type { AxiosError, User } from "@/authentication/AuthContext.types";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-
-/**
- * AuthContextType defines the shape of the authentication context.
- */
-interface AuthContextType {
-  accessToken: string | null;
-  role?: string;
-  login: (email: string, password: string) => Promise<void>;
-  registerUser: (
-    studentId: string,
-    firstName: string,
-    lastName: string,
-    email: string,
-    phoneNumber: string,
-    password: string
-  ) => Promise<void>;
-  logout: () => Promise<void>;
-  loading: boolean;
-  setLoading: (loading: boolean) => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-let refreshPromise: Promise<string> | null = null;
 
 /**
  * AuthProvider manages authentication state and logic.
@@ -32,13 +12,17 @@ let refreshPromise: Promise<string> | null = null;
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [accessToken, setAccessToken] = useState<string | null>(
-    () => localStorage.getItem("accessToken") || null
+  const [accessToken, setAccessToken] = useState<string | null>(() =>
+    tokenService.getAccessToken()
   );
-  const [role, setRole] = useState<string | undefined>(
-    () => localStorage.getItem("role") || undefined
+  const [user, setUser] = useState<User | null>(() =>
+    tokenService.getUserData()
   );
   const [loading, setLoading] = useState(false);
+
+  // Computed values
+  const isAuthenticated = Boolean(accessToken && user);
+  const role = user?.role;
 
   /**
    * Handles user login.
@@ -47,12 +31,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log("🔑 Starting login process...");
     const res = await axiosInstance.post("/auth/login", { email, password });
     const token = res.data.accessToken;
-    const userRole = res.data.user?.role;
+    const userData = res.data.user;
 
+    // Store token and user data
+    tokenService.setAccessToken(token);
+    tokenService.setUserData(userData);
+
+    // Update state
     setAccessToken(token);
-    setRole(userRole);
-    localStorage.setItem("accessToken", token);
-    localStorage.setItem("role", userRole);
+    setUser(userData);
 
     console.log("✅ Login successful");
   };
@@ -78,11 +65,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         password,
         role: "clearingOfficer" as const,
       });
-    } catch (err: any) {
-      if (err.response?.status === 400) {
-        toast.error(err?.response?.data?.message || "Registration failed.");
+    } catch (err: unknown) {
+      const error = err as AxiosError;
+      if (error.response?.status === 400) {
+        toast.error(
+          error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            "Registration failed."
+        );
       }
-      throw err;
+      throw error;
     }
   };
 
@@ -91,79 +83,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
    */
   const logout = async () => {
     try {
-      await axiosInstance.post("/auth/logout", {}, { withCredentials: true });
+      const currentToken = tokenService.getAccessToken();
+      await axiosInstance.post(
+        "/auth/logout",
+        {},
+        {
+          withCredentials: true,
+          headers: currentToken
+            ? { Authorization: `Bearer ${currentToken}` }
+            : {},
+        }
+      );
     } catch (error) {
       console.error("Logout failed on server:", error);
     }
 
-    refreshPromise = null;
+    // Local cleanup
+    tokenService.clearTokens();
     setAccessToken(null);
-    setRole(undefined);
-    localStorage.clear();
+    setUser(null);
 
-    // Force redirect to login page
-    window.location.href = "/login";
+    redirectService.redirectToLogin(
+      "You have been logged out successfully.",
+      false
+    );
   };
 
   /**
-   * Attempts to refresh the access token.
-   * If the refresh token is expired or invalid, logs out and clears all local storage.
+   * Attempts to refresh the access token using the token service.
    */
   const refreshAccessToken = async (): Promise<string> => {
     try {
-      console.log("🔄 Attempting token refresh...");
-      const res = await axiosInstance.post(
-        "/auth/refresh-token",
-        {},
-        { withCredentials: true }
-      );
-
-      const newToken = res.data.accessToken;
-      const newRole = res.data.user?.role;
-
+      const newToken = await tokenService.refreshAccessToken();
       setAccessToken(newToken);
-      localStorage.setItem("accessToken", newToken);
-
-      if (newRole) {
-        setRole(newRole);
-        localStorage.setItem("role", newRole);
-      }
-
-      console.log("✅ Token refresh successful!");
       return newToken;
-    } catch (err: any) {
-      // If refresh token is expired or invalid, clear all local storage and force logout
-      console.log(
-        "❌ Token refresh failed - logging out and clearing local storage"
-      );
-      refreshPromise = null;
+    } catch (err: unknown) {
+      // Token service handles cleanup and redirect
       setAccessToken(null);
-      setRole(undefined);
-      localStorage.clear();
-      window.location.href = "/login";
+      setUser(null);
       throw err;
     }
   };
 
   /**
-   * On mount, try to refresh token if a token or role exists in local storage.
+   * On mount, try to refresh token if user data exists but no valid access token.
    */
   useEffect(() => {
     const tryInitialRefresh = async () => {
-      const storedToken = localStorage.getItem("accessToken");
-      const storedRole = localStorage.getItem("role");
+      const storedToken = tokenService.getAccessToken();
+      const storedUser = tokenService.getUserData();
 
-      if ((storedToken || storedRole) && !accessToken) {
+      // If we have user data but no valid token, try to refresh
+      if (
+        storedUser &&
+        (!storedToken || tokenService.isTokenExpired(storedToken))
+      ) {
         console.log("🔄 Attempting initial token refresh...");
         try {
           await refreshAccessToken();
         } catch {
-          console.log("❌ Initial refresh failed");
+          console.log("❌ Initial refresh failed - clearing data");
+          tokenService.clearTokens();
+          setAccessToken(null);
+          setUser(null);
         }
       }
     };
     tryInitialRefresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -175,7 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const requestIntercept = axiosInstance.interceptors.request.use(
       (config) => {
-        const currentToken = localStorage.getItem("accessToken");
+        const currentToken = tokenService.getAccessToken();
         if (currentToken && !config.url?.includes("/auth/")) {
           config.headers.Authorization = `Bearer ${currentToken}`;
         }
@@ -200,21 +186,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           originalRequest._retry = true;
 
           try {
-            if (!refreshPromise) {
-              refreshPromise = refreshAccessToken();
-            }
-            const newToken = await refreshPromise;
-            refreshPromise = null;
-
+            const newToken = await refreshAccessToken();
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return axiosInstance(originalRequest);
-          } catch (refreshError: any) {
-            // If refresh token is expired or invalid, clear all local storage and force logout
-            refreshPromise = null;
+          } catch (refreshError: unknown) {
+            // Token service handles cleanup and redirect
             setAccessToken(null);
-            setRole(undefined);
-            localStorage.clear();
-            window.location.href = "/login";
+            setUser(null);
             return Promise.reject(refreshError);
           }
         }
@@ -227,17 +205,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       axiosInstance.interceptors.request.eject(requestIntercept);
       axiosInstance.interceptors.response.eject(responseIntercept);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <AuthContext.Provider
       value={{
         accessToken,
+        user,
+        role,
+        isAuthenticated,
         login,
         registerUser,
         logout,
-        role,
         loading,
         setLoading,
       }}
@@ -247,11 +226,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-/**
- * Custom hook to use authentication context.
- */
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within AuthProvider");
-  return context;
-};
+// Export useAuth hook separately to avoid fast refresh issues

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import {
@@ -14,60 +13,69 @@ import { Search, FolderOpen } from "lucide-react";
 import ReqDialogForm from "./_components/ReqDialogForm";
 import RequirementCard from "./_components/RequirementCard";
 
-interface Course {
-  title: string;
-  description: string;
-  dueDate: string;
-  completed: boolean;
-  students: number;
-  department: string;
-}
+import { useSelector, useDispatch } from "react-redux";
+import { type RootState, type AppDispatch } from "@/store";
+import {
+  setSearch,
+  setSelectedCategory,
+  setIsDialogOpen,
+  // addRequirement,
+  setNewRequirement,
+} from "@/store/slices/clearingOfficer/clearanceSlice";
 
-const requirements: Course[] = [
-  {
-    title: "CC107",
-    description: "Advanced topics in data structures and algorithms. ",
-    dueDate: "May 15, 2025",
-    completed: true,
-    students: 45,
-    department: "BS-Computer Science",
-  },
-  {
-    title: "SE102 ",
-    description: "Principles of software design and architecture.",
-    dueDate: "April 28, 2025",
-    completed: false,
-    students: 38,
-    department: "BS-Education",
-  },
-  {
-    title: "IS301",
-    description: "In-depth study of database management systems.",
-    dueDate: "June 5, 2025",
-    completed: false,
-    students: 52,
-    department: "BS-Administration",
-  },
-  {
-    title: "CS404 ",
-    description: "Exploring the fundamentals of AI and machine learning.",
-    dueDate: "May 20, 2025",
-    completed: true,
-    students: 30,
-    department: "BS-Accounting",
-  },
-];
+// interface Course {
+//   title: string;
+//   description: string;
+//   dueDate: string;
+//   completed: boolean;
+//   students: number;
+//   department: string;
+// }
+
+// const requirements: Course[] = [
+//   {
+//     title: "CC107",
+//     description: "Advanced topics in data structures and algorithms. ",
+//     dueDate: "May 15, 2025",
+//     completed: true,
+//     students: 45,
+//     department: "BS-Computer Science",
+//   },
+//   {
+//     title: "SE102 ",
+//     description: "Principles of software design and architecture.",
+//     dueDate: "April 28, 2025",
+//     completed: false,
+//     students: 38,
+//     department: "BS-Education",
+//   },
+//   {
+//     title: "IS301",
+//     description: "In-depth study of database management systems.",
+//     dueDate: "June 5, 2025",
+//     completed: false,
+//     students: 52,
+//     department: "BS-Administration",
+//   },
+//   {
+//     title: "CS404 ",
+//     description: "Exploring the fundamentals of AI and machine learning.",
+//     dueDate: "May 20, 2025",
+//     completed: true,
+//     students: 30,
+//     department: "BS-Accounting",
+//   },
+// ];
 
 const Clearance = () => {
-  const [search, setSearch] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  const [newRequirement, setNewRequirement] = useState({
-    title: "",
-    description: "",
-    dueDate: "",
-    department: "",
-  });
+  const dispatch = useDispatch<AppDispatch>();
+  const {
+    search,
+    selectedCategory,
+    isDialogOpen,
+    newRequirement,
+    requirements,
+  } = useSelector((state: RootState) => state.clearance);
 
   const categories = [
     "all",
@@ -87,14 +95,17 @@ const Clearance = () => {
   const handleCreateRequirement = () => {
     // Handle form submission logic here
     console.log("Creating requirement:", newRequirement);
-    setIsDialogOpen(false);
+    dispatch(setIsDialogOpen(false));
     // Reset form
-    setNewRequirement({
-      title: "",
-      description: "",
-      dueDate: "",
-      department: "",
-    });
+    dispatch(
+      setNewRequirement({
+        title: "",
+        description: "",
+        dueDate: "",
+        department: "",
+        requirements: [],
+      })
+    );
   };
 
   return (
@@ -111,9 +122,9 @@ const Clearance = () => {
           </div>
           <ReqDialogForm
             isDialogOpen={isDialogOpen}
-            setIsDialogOpen={setIsDialogOpen}
+            setIsDialogOpen={(value) => dispatch(setIsDialogOpen(value))}
             newRequirement={newRequirement}
-            setNewRequirement={setNewRequirement}
+            setNewRequirement={(value) => dispatch(setNewRequirement(value))}
             handleCreateRequirement={handleCreateRequirement}
             categories={categories}
           />
@@ -125,11 +136,14 @@ const Clearance = () => {
             <Input
               placeholder="Search"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => dispatch(setSearch(e.target.value))}
               className="pl-10 w-full  md:w-[200px] lg:w-[300px]"
             />
           </div>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <Select
+            value={selectedCategory}
+            onValueChange={(value) => dispatch(setSelectedCategory(value))}
+          >
             <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="Filter by category" />
             </SelectTrigger>
@@ -164,6 +178,7 @@ const Clearance = () => {
                 description={req.description}
                 dueDate={req.dueDate}
                 students={req.students}
+                requirements={req.requirements}
               />
             ))}
           </div>

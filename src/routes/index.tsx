@@ -17,12 +17,13 @@ import AddClearingOfficer from "@/pages/admin-side/AddClearingOfficer";
 import AdminSettings from "@/pages/admin-side/AccountSettings";
 import Layout from "@/layouts/Layout";
 import ViewQrCodePermit from "@/pages/ViewQrCodePermit";
-// import ProtectedRoute from "@/components/ProtectedRoute";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Register from "@/pages/auth/Register";
 import GuestRoute from "@/components/GuestRoute";
 import RootPages from "@/pages/landingPage/RootPages";
 import ClearingOfficerLayout from "@/layouts/ClearingOfficerLayout";
 import SampleQrCode from "@/pages/SampleQrCode";
+import ViewPermit from "@/pages/TestingQrCodePermit";
 
 const AppRoutes: React.FC = () => {
   return (
@@ -37,9 +38,9 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/admin-side"
         element={
-          // <ProtectedRoute allowedRoles={["admin"]}>
-          <AdminLayout />
-          // </ProtectedRoute>
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminLayout />
+          </ProtectedRoute>
         }
       >
         <Route index element={<AdminDashboard />} />
@@ -52,9 +53,9 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/clearing-officer"
         element={
-          // <ProtectedRoute allowedRoles={["clearingOfficer"]}>
-          <ClearingOfficerLayout />
-          // </ProtectedRoute>
+          <ProtectedRoute allowedRoles={["clearingOfficer"]}>
+            <ClearingOfficerLayout />
+          </ProtectedRoute>
         }
       >
         <Route index element={<Dashboard />} />
@@ -69,6 +70,7 @@ const AppRoutes: React.FC = () => {
       {/**General Route */}
       <Route path="permit" element={<ViewQrCodePermit />} />
       <Route path="sampleQrCode" element={<SampleQrCode />} />
+      <Route path="viewPermit" element={<ViewPermit />} />
       <Route
         path="login"
         element={

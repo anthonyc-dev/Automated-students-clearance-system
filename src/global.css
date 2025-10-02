@@ -121,3 +121,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* App Lock Styles */
+.app-locked {
+  overflow: hidden;
+  cursor: not-allowed;
+}
+
+.app-locked * {
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+/* Allow the lock overlay to be interactive */
+.app-locked .app-lock-overlay {
+  pointer-events: auto !important;
+}
+
+.app-locked .app-lock-overlay * {
+  pointer-events: auto !important;
+  user-select: auto !important;
+}

@@ -1,6 +1,7 @@
-import { useAuth } from "@/authentication/AuthContext";
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/authentication/useAuth";
+import { redirectService } from "@/authentication/redirectService";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginData } from "@/lib/validation";
@@ -14,8 +15,14 @@ export default function Login() {
   const [isSuccessModalVisible, setIsSuccessModalVisible] =
     useState<boolean>(false);
 
-  const navigate = useNavigate();
-  const { login, role } = useAuth();
+  const { login, role, user, isAuthenticated } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && role) {
+      redirectService.redirectToDashboard(role);
+    }
+  }, [isAuthenticated, role]);
 
   const {
     register,
@@ -38,16 +45,21 @@ export default function Login() {
       await login(data.email, data.password);
 
       setIsSuccessModalVisible(true);
-    } catch (error: any) {
-      if (error.response) {
-        const { status } = error.response;
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: { status?: number; data?: { error?: string } };
+        request?: unknown;
+      };
+      if (axiosError.response) {
+        const { status } = axiosError.response;
 
         if (status === 401 || status === 404 || status === 400) {
           setError(
-            error.response.data?.error || "Wrong credentials. Please try again."
+            axiosError.response.data?.error ||
+              "Wrong credentials. Please try again."
           );
         }
-      } else if (error.request) {
+      } else if (axiosError.request) {
         setError("Network error. Please check your connection and try again.");
       } else {
         setError("An unexpected error occurred. Please try again.");
@@ -145,13 +157,13 @@ export default function Login() {
         isOpen={isSuccessModalVisible}
         onOk={() => {
           setIsSuccessModalVisible(false);
-          if (role === "admin") navigate("/admin-side", { replace: true });
-          if (role === "clearingOfficer")
-            navigate("/clearing-officer", { replace: true });
+          if (role) {
+            redirectService.redirectToDashboard(role);
+          }
         }}
         role={role || ""}
         successTitle="Login Successful"
-        successMessage="Welcome back! NCMC's Clearance System is now open..."
+        successMessage={`Welcome back, ${user?.firstName}! NCMC's Clearance System is now open...`}
         errorTitle="Access Denied"
         errorMessage={
           error ||

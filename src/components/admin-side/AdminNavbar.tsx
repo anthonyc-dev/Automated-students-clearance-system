@@ -93,7 +93,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import NotificationDrawer from "../NotificationDrawer";
-import { useAuth } from "../../authentication/AuthContext";
+import { useAuth } from "../../authentication/useAuth";
 
 interface NavbarProps {
   toggleSidebar: () => void;

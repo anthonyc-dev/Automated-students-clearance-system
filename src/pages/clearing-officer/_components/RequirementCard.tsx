@@ -10,11 +10,12 @@ import {
 } from "@/components/ui/card";
 import {
   ClipboardList,
-  FileText,
   Users,
   Calendar,
   Trash2,
   Edit,
+  Check,
+  CircleAlert,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -26,6 +27,7 @@ interface RequirementsCardProps {
   description: string;
   dueDate: string;
   students: number;
+  requirements: string[];
 }
 
 const RequirementCard: React.FC<RequirementsCardProps> = ({
@@ -36,6 +38,7 @@ const RequirementCard: React.FC<RequirementsCardProps> = ({
   description,
   dueDate,
   students,
+  requirements,
 }) => {
   return (
     <div className="h-full">
@@ -69,11 +72,28 @@ const RequirementCard: React.FC<RequirementsCardProps> = ({
           </div>
         </CardHeader>
         <CardContent className="flex-1">
-          <div className="flex gap-2 text-gray-500 text-sm mb-4">
-            <FileText className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          {requirements.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center text-sm text-gray-600 font-medium mb-1">
+                <ClipboardList className="h-4 w-4 mr-2" />
+                <span>Requirements</span>
+              </div>
+              {requirements.map((requirement) => (
+                <div
+                  key={requirement}
+                  className="flex items-center text-sm text-gray-500"
+                >
+                  <Check className="h-4 w-4 mr-2 text-green-500" />
+                  <span>{requirement}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2 text-gray-500 text-sm mt-4">
+            <CircleAlert className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600" />
             <p className="flex-1">{description}</p>
           </div>
-          <div className="flex items-center text-sm text-gray-500 mb-2">
+          <div className="flex items-center text-sm text-gray-500 mt-4">
             <Calendar className="h-4 w-4 mr-2" />
             <span>Due: {dueDate}</span>
           </div>
@@ -89,18 +109,12 @@ const RequirementCard: React.FC<RequirementsCardProps> = ({
             </Button>
           </Link>
           <Link to="">
-            <Button
-              size="icon"
-              className="border-2 border-blue-600 bg-blue-100 hover:bg-blue-300"
-            >
+            <Button size="icon" className=" bg-blue-100 hover:bg-blue-300">
               <Edit className="h-4 w-4 text-blue-600" />
             </Button>
           </Link>
           <Link to="">
-            <Button
-              size="icon"
-              className="border-2 border-red-600 bg-red-100 hover:bg-red-300"
-            >
+            <Button size="icon" className="  bg-red-100 hover:bg-red-300">
               <Trash2 className="h-4 w-4 text-red-600" />
             </Button>
           </Link>

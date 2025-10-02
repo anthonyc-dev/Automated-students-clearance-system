@@ -1,4 +1,4 @@
-import { useAuth } from "@/authentication/AuthContext";
+import { useAuth } from "@/authentication/useAuth";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,18 +45,22 @@ export default function Register() {
       );
       setIsSuccessModalVisible(true);
       reset();
-    } catch (error: any) {
-      if (error?.response) {
-        const { status } = error.response;
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: { status?: number; data?: { error?: string } };
+        request?: unknown;
+      };
+      if (axiosError.response) {
+        const { status } = axiosError.response;
         if (status === 400) {
           setError(
-            error.response.data?.error ||
+            axiosError.response.data?.error ||
               "Registration failed. Please try again later."
           );
         } else {
           setError("Registration failed. Please try again later.");
         }
-      } else if (error?.request) {
+      } else if (axiosError.request) {
         setError("Network error. Please check your connection and try again.");
       } else {
         setError("An unexpected error occurred. Please try again.");

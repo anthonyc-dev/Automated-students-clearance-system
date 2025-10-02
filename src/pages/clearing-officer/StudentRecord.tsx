@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   Search,
@@ -44,140 +44,152 @@ import {
 } from "@/components/ui/dialog";
 import TooltipDemo from "@/components/HoverToolip";
 import PaginationComponent from "./_components/PaginationComponent";
+import { useSelector, useDispatch } from "react-redux";
+import { type RootState, type AppDispatch } from "@/store";
+import {
+  setSearch,
+  setSelectedStatus,
+  setSelectedStudents,
+  setCurrentPage,
+  setConfirmDialog,
+  updateStudentStatus,
+  toggleStudentStatus,
+  // Student,
+} from "@/store/slices/clearingOfficer/studentSlice";
 
-interface Student {
-  id: number;
-  id_no: string;
-  name: string;
-  email: string;
-  cp_no: string;
-  profilePic: string;
-  status: "Signed" | "Incomplete" | "Missing";
-}
+// interface Student {
+//   id: number;
+//   id_no: string;
+//   name: string;
+//   email: string;
+//   cp_no: string;
+//   profilePic: string;
+//   status: "Signed" | "Incomplete" | "Missing";
+// }
 
-interface ConfirmDialog {
-  isOpen: boolean;
-  type: "single" | "multiple";
-  studentId?: number;
-  studentName?: string;
-  onConfirm?: () => void;
-}
+// interface ConfirmDialog {
+//   isOpen: boolean;
+//   type: "single" | "multiple";
+//   studentId?: number;
+//   studentName?: string;
+//   onConfirm?: () => void;
+// }
 
-const students: Student[] = [
-  {
-    id: 1,
-    id_no: "24-0334",
-    name: "John Doe",
-    email: "johndoe@example.com",
-    cp_no: "09123456789",
-    profilePic: "https://randomuser.me/api/portraits/men/1.jpg",
-    status: "Signed",
-  },
-  {
-    id: 2,
-    id_no: "20-0842",
-    name: "Jane Smith",
-    email: "janesmith@example.com",
-    cp_no: "09123456789",
-    profilePic: "https://randomuser.me/api/portraits/women/2.jpg",
-    status: "Incomplete",
-  },
-  {
-    id: 3,
-    id_no: "24-0334",
-    name: "Alice Johnson",
-    email: "alicejohnson@example.com",
-    cp_no: "09123456789",
-    profilePic: "https://randomuser.me/api/portraits/women/3.jpg",
-    status: "Signed",
-  },
-  {
-    id: 4,
-    id_no: "24-0334",
-    name: "Bob Brown",
-    email: "bobbrown@example.com",
-    cp_no: "09123456789",
-    profilePic: "https://randomuser.me/api/portraits/men/4.jpg",
-    status: "Missing",
-  },
-  {
-    id: 5,
-    id_no: "24-0334",
-    name: "Jane Smith",
-    email: "janesmith@example.com",
-    cp_no: "09123456789",
-    profilePic: "https://randomuser.me/api/portraits/women/2.jpg",
-    status: "Signed",
-  },
-  {
-    id: 6,
-    id_no: "24-0334",
-    name: "Alice Johnson",
-    email: "alicejohnson@example.com",
-    cp_no: "09123456789",
-    profilePic: "https://randomuser.me/api/portraits/women/3.jpg",
-    status: "Signed",
-  },
-  {
-    id: 7,
-    id_no: "24-0334",
-    name: "Bob Brown",
-    email: "bobbrown@example.com",
-    cp_no: "09123456789",
-    profilePic: "https://randomuser.me/api/portraits/men/4.jpg",
-    status: "Incomplete",
-  },
-  {
-    id: 8,
-    id_no: "24-0334",
-    name: "Jane Smith",
-    email: "janesmith@example.com",
-    cp_no: "09123456789",
-    profilePic: "https://randomuser.me/api/portraits/women/2.jpg",
-    status: "Missing",
-  },
-  {
-    id: 9,
-    id_no: "21-0882",
-    name: "Alice Johnson",
-    email: "alicejohnson@example.com",
-    cp_no: "09123456789",
-    profilePic: "https://randomuser.me/api/portraits/women/3.jpg",
-    status: "Signed",
-  },
-  {
-    id: 10,
-    id_no: "24-0334",
-    name: "Bob Brown",
-    email: "bobbrown@example.com",
-    cp_no: "09123456789",
-    profilePic: "https://randomuser.me/api/portraits/men/4.jpg",
-    status: "Missing",
-  },
-  {
-    id: 11,
-    id_no: "24-0334",
-    name: "Bob Brown",
-    email: "bobbrown@example.com",
-    cp_no: "09123456789",
-    profilePic: "https://randomuser.me/api/portraits/men/4.jpg",
-    status: "Missing",
-  },
-];
+// const students: Student[] = [
+//   {
+//     id: 1,
+//     id_no: "24-0334",
+//     name: "John Doe",
+//     email: "johndoe@example.com",
+//     cp_no: "09123456789",
+//     profilePic: "https://randomuser.me/api/portraits/men/1.jpg",
+//     status: "Signed",
+//   },
+//   {
+//     id: 2,
+//     id_no: "20-0842",
+//     name: "Jane Smith",
+//     email: "janesmith@example.com",
+//     cp_no: "09123456789",
+//     profilePic: "https://randomuser.me/api/portraits/women/2.jpg",
+//     status: "Incomplete",
+//   },
+//   {
+//     id: 3,
+//     id_no: "24-0334",
+//     name: "Alice Johnson",
+//     email: "alicejohnson@example.com",
+//     cp_no: "09123456789",
+//     profilePic: "https://randomuser.me/api/portraits/women/3.jpg",
+//     status: "Signed",
+//   },
+//   {
+//     id: 4,
+//     id_no: "24-0334",
+//     name: "Bob Brown",
+//     email: "bobbrown@example.com",
+//     cp_no: "09123456789",
+//     profilePic: "https://randomuser.me/api/portraits/men/4.jpg",
+//     status: "Missing",
+//   },
+//   {
+//     id: 5,
+//     id_no: "24-0334",
+//     name: "Jane Smith",
+//     email: "janesmith@example.com",
+//     cp_no: "09123456789",
+//     profilePic: "https://randomuser.me/api/portraits/women/2.jpg",
+//     status: "Signed",
+//   },
+//   {
+//     id: 6,
+//     id_no: "24-0334",
+//     name: "Alice Johnson",
+//     email: "alicejohnson@example.com",
+//     cp_no: "09123456789",
+//     profilePic: "https://randomuser.me/api/portraits/women/3.jpg",
+//     status: "Signed",
+//   },
+//   {
+//     id: 7,
+//     id_no: "24-0334",
+//     name: "Bob Brown",
+//     email: "bobbrown@example.com",
+//     cp_no: "09123456789",
+//     profilePic: "https://randomuser.me/api/portraits/men/4.jpg",
+//     status: "Incomplete",
+//   },
+//   {
+//     id: 8,
+//     id_no: "24-0334",
+//     name: "Jane Smith",
+//     email: "janesmith@example.com",
+//     cp_no: "09123456789",
+//     profilePic: "https://randomuser.me/api/portraits/women/2.jpg",
+//     status: "Missing",
+//   },
+//   {
+//     id: 9,
+//     id_no: "21-0882",
+//     name: "Alice Johnson",
+//     email: "alicejohnson@example.com",
+//     cp_no: "09123456789",
+//     profilePic: "https://randomuser.me/api/portraits/women/3.jpg",
+//     status: "Signed",
+//   },
+//   {
+//     id: 10,
+//     id_no: "24-0334",
+//     name: "Bob Brown",
+//     email: "bobbrown@example.com",
+//     cp_no: "09123456789",
+//     profilePic: "https://randomuser.me/api/portraits/men/4.jpg",
+//     status: "Missing",
+//   },
+//   {
+//     id: 11,
+//     id_no: "24-0334",
+//     name: "Bob Brown",
+//     email: "bobbrown@example.com",
+//     cp_no: "09123456789",
+//     profilePic: "https://randomuser.me/api/portraits/men/4.jpg",
+//     status: "Missing",
+//   },
+// ];
 
 const StudentRecord: React.FC = () => {
-  const [search, setSearch] = useState<string>("");
-  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
-  const [studentList, setStudentList] = useState<Student[]>(students);
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialog>(() => ({
-    isOpen: false,
-    type: "single",
-  }));
-  const studentsPerPage = 10;
+  const dispatch = useDispatch<AppDispatch>();
+  const {
+    search,
+    selectedStatus,
+    selectedStudents,
+    currentPage,
+    studentList,
+    confirmDialog,
+  } = useSelector((state: RootState) => state.student);
 
   const statuses = ["all", "Signed", "Incomplete", "Missing"];
+  const studentsPerPage = 10;
 
   const filteredStudents = useMemo(
     () =>
@@ -195,89 +207,79 @@ const StudentRecord: React.FC = () => {
 
   const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
 
-  // Calculate paginated students
   const paginatedStudents = useMemo(() => {
     const startIndex = (currentPage - 1) * studentsPerPage;
     const endIndex = startIndex + studentsPerPage;
     return filteredStudents.slice(startIndex, endIndex);
-  }, [filteredStudents, currentPage, studentsPerPage]);
+  }, [filteredStudents, currentPage]);
 
   const handleSelectAll = (checked: boolean) => {
-    setSelectedStudents(checked ? filteredStudents.map((s) => s.id) : []);
+    dispatch(
+      setSelectedStudents(checked ? filteredStudents.map((s) => s.id) : [])
+    );
   };
 
   const handleSelectStudent = (studentId: number, checked: boolean) => {
-    setSelectedStudents((prev) =>
-      checked ? [...prev, studentId] : prev.filter((id) => id !== studentId)
-    );
-  };
-
-  const handleSignSelected = (): void => {
-    setStudentList((prevList) =>
-      prevList.map((student) =>
-        selectedStudents.includes(student.id)
-          ? { ...student, status: "Signed" }
-          : student
+    dispatch(
+      setSelectedStudents(
+        checked
+          ? [...selectedStudents, studentId]
+          : selectedStudents.filter((id) => id !== studentId)
       )
     );
-    setSelectedStudents([]);
   };
 
-  const handleUndoSelected = (): void => {
-    setConfirmDialog({
-      isOpen: true,
-      type: "multiple",
-      onConfirm: () => {
-        setStudentList((prevList) =>
-          prevList.map((student) =>
-            selectedStudents.includes(student.id)
-              ? { ...student, status: "Incomplete" }
-              : student
-          )
-        );
-        setSelectedStudents([]);
-        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
-      },
-    });
+  const handleSignSelected = () => {
+    dispatch(
+      updateStudentStatus({ studentIds: selectedStudents, status: "Signed" })
+    );
   };
 
-  const handleSignToggle = (studentId: number): void => {
-    const student = studentList.find((s) => s.id === studentId);
-
-    if (student?.status === "Signed") {
+  const handleUndoSelected = () => {
+    dispatch(
       setConfirmDialog({
         isOpen: true,
-        type: "single",
-        studentId,
-        studentName: student.name,
+        type: "multiple",
         onConfirm: () => {
-          setStudentList((prevList) =>
-            prevList.map((s) =>
-              s.id === studentId ? { ...s, status: "Incomplete" } : s
-            )
+          dispatch(
+            updateStudentStatus({
+              studentIds: selectedStudents,
+              status: "Incomplete",
+            })
           );
-          setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+          dispatch(setConfirmDialog({ isOpen: false, type: "multiple" }));
         },
-      });
-    } else {
-      setStudentList((prevList) =>
-        prevList.map((s) =>
-          s.id === studentId ? { ...s, status: "Signed" } : s
-        )
+      })
+    );
+  };
+
+  const handleSignToggle = (studentId: number) => {
+    const student = studentList.find((s) => s.id === studentId);
+    if (student?.status === "Signed") {
+      dispatch(
+        setConfirmDialog({
+          isOpen: true,
+          type: "single",
+          studentId,
+          studentName: student.name,
+          onConfirm: () => {
+            dispatch(toggleStudentStatus(studentId));
+            dispatch(setConfirmDialog({ isOpen: false, type: "single" }));
+          },
+        })
       );
+    } else {
+      dispatch(toggleStudentStatus(studentId));
     }
   };
 
   const handleDialogCancel = () => {
-    setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+    dispatch(setConfirmDialog({ ...confirmDialog, isOpen: false }));
   };
 
   const isAllSelected =
     selectedStudents.length > 0 &&
     selectedStudents.length === filteredStudents.length;
-  // const isSomeSelected =
-  //   selectedStudents.length > 0 &&
-  //   selectedStudents.length < paginatedStudents.length;
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
@@ -304,7 +306,7 @@ const StudentRecord: React.FC = () => {
                 <Input
                   placeholder="Search"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => dispatch(setSearch(e.target.value))}
                   className="pl-8 w-full sm:w-[250px]"
                 />
               </div>
@@ -325,7 +327,10 @@ const StudentRecord: React.FC = () => {
                   {studentList.filter((s) => s.status === "Missing").length}
                 </span>
               </div>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <Select
+                value={selectedStatus}
+                onValueChange={(value) => dispatch(setSelectedStatus(value))}
+              >
                 <SelectTrigger className="w-full sm:w-[180px] sm:ml-auto">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
@@ -511,7 +516,7 @@ const StudentRecord: React.FC = () => {
               <PaginationComponent
                 currentPage={currentPage}
                 totalPages={totalPages}
-                setCurrentPage={setCurrentPage}
+                setCurrentPage={(value) => dispatch(setCurrentPage(value))}
               />
             </div>
           </div>

@@ -1,15 +1,16 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../authentication/AuthContext";
+import { useAuth } from "../authentication/useAuth";
 
 interface Props {
   children: React.ReactNode;
 }
 
 const GuestRoute: React.FC<Props> = ({ children }) => {
-  const { accessToken, role } = useAuth();
+  const { isAuthenticated, role } = useAuth();
 
-  if (accessToken) {
+  // Redirect authenticated users to their respective dashboards
+  if (isAuthenticated) {
     if (role === "admin") {
       return <Navigate to="/admin-side" replace />;
     } else if (role === "clearingOfficer") {

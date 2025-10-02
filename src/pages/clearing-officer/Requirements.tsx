@@ -141,7 +141,7 @@ const Requirements = () => {
     {
       title: <span className="font-semibold">Actions</span>,
       key: "actions",
-      render: (_: any, record: Requirement) => (
+      render: (_: unknown, record: Requirement) => (
         <Button
           type="text"
           danger

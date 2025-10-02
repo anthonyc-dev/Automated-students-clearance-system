@@ -1,44 +1,87 @@
-// import axios from "axios";
+import axiosInstance from "@/api/axios";
 
-// const API_URL = import.meta.env.VITE_API_URL;
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
 
-// export const login = async (email: string, password: string) => {
-//   try {
-//     const response = await axios.post(`${API_URL}/login`, {
-//       email,
-//       password,
-//     });
+export interface RegisterRequest {
+  studentId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+  role: string;
+}
 
-//     return response.data;
-//   } catch (error: any) {
-//     throw error;
-//   }
-// };
+export interface AuthResponse {
+  message: string;
+  user: {
+    id: string;
+    studentId?: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber?: string;
+    role: string;
+  };
+  accessToken: string;
+}
 
-// export const register = async (
-//   studentId: string,
-//   fullName: string,
-//   email: string,
-//   phoneNumber: string,
-//   password: string,
-//   role: string
-// ) => {
-//   try {
-//     const response = await axios.post(`${API_URL}/register`, {
-//       studentId,
-//       fullName,
-//       email,
-//       phoneNumber,
-//       password,
-//       role,
-//     });
-//     return response.data;
-//   } catch (error: any) {
-//     throw error;
-//   }
-// };
+export interface RefreshResponse {
+  accessToken: string;
+}
 
-// export const logout = async () => {
-//   const response = await axios.post(`${API_URL}/logout`);
-//   return response.data;
-// };
+/**
+ * Authentication API service
+ */
+export const authApi = {
+  /**
+   * Login user
+   */
+  async login(data: LoginRequest): Promise<AuthResponse> {
+    const response = await axiosInstance.post("/auth/login", data);
+    return response.data;
+  },
+
+  /**
+   * Register new user
+   */
+  async register(data: RegisterRequest): Promise<AuthResponse> {
+    const response = await axiosInstance.post("/auth/register", data);
+    return response.data;
+  },
+
+  /**
+   * Refresh access token
+   */
+  async refreshToken(): Promise<RefreshResponse> {
+    const response = await axiosInstance.post(
+      "/auth/refresh-token",
+      {},
+      { withCredentials: true }
+    );
+    return response.data;
+  },
+
+  /**
+   * Logout user
+   */
+  async logout(): Promise<{ message: string }> {
+    const response = await axiosInstance.post(
+      "/auth/logout",
+      {},
+      { withCredentials: true }
+    );
+    return response.data;
+  },
+
+  /**
+   * Get user profile (protected route)
+   */
+  async getProfile(): Promise<{ user: any }> {
+    const response = await axiosInstance.get("/auth/profile");
+    return response.data;
+  },
+};

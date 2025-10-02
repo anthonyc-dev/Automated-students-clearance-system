@@ -28,12 +28,14 @@ interface ReqDialogFormProps {
     department: string;
     description: string;
     dueDate: string;
+    requirements: string[];
   };
   setNewRequirement: (requirement: {
     title: string;
     department: string;
     description: string;
     dueDate: string;
+    requirements: string[];
   }) => void;
   handleCreateRequirement: () => void;
   categories: string[];
@@ -74,6 +76,22 @@ const ReqDialogForm = ({
                   setNewRequirement({
                     ...newRequirement,
                     title: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="requirements">Requirements</Label>
+              <Input
+                id="requirements"
+                placeholder="Enter requirement requirements"
+                value={newRequirement.requirements.join(", ")}
+                onChange={(e) =>
+                  setNewRequirement({
+                    ...newRequirement,
+                    requirements: e.target.value
+                      .split(",")
+                      .map((r) => r.trim()),
                   })
                 }
               />
