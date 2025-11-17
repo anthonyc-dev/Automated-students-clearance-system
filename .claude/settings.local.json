@@ -6,7 +6,10 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(curl:*)",
-      "Bash(pnpm list:*)"
+      "Bash(pnpm list:*)",
+      "Bash(cd:*)",
+      "Bash(dir:*)",
+      "Read(//c/Users/Hp/Desktop/Developer Files/Personal Project/Online Clearance/**)"
     ],
     "deny": [],
     "ask": []

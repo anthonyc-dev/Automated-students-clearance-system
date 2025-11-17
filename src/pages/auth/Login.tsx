@@ -168,11 +168,17 @@ export default function Login() {
           setIsSuccessModalVisible(false);
           if (role === "admin") {
             navigate("/admin-side", { replace: true });
-          } else if (role === "clearingOfficer") {
-            navigate("/clearing-officer", { replace: true });
-          } else if (role === "sao") {
-            navigate("/clearing-officer", { replace: true });
-          } else if (role === "registrar") {
+          } else if (
+            role === "clearingOfficer" ||
+            role === "sao" ||
+            role === "registrar" ||
+            role === "cashier" ||
+            role === "laboratory" ||
+            role === "library" ||
+            role === "tailoring" ||
+            role === "guidance" ||
+            role === "dean"
+          ) {
             navigate("/clearing-officer", { replace: true });
           } else if (role === "student") {
             navigate("/", { replace: true });

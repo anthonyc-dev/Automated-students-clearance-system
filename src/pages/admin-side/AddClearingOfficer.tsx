@@ -579,7 +579,19 @@ const AddClearingOfficer = () => {
                     ? "bg-purple-100 text-purple-800"
                     : officer.role === "registrar"
                     ? "bg-blue-100 text-blue-800"
-                    : "bg-green-100 text-green-800"
+                    : officer.role === "dean"
+                    ? "bg-orange-100 text-orange-800"
+                    : officer.role === "cashier"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : officer.role === "laboratory"
+                    ? "bg-green-100 text-green-800"
+                    : officer.role === "library"
+                    ? "bg-indigo-100 text-indigo-800"
+                    : officer.role === "tailoring"
+                    ? "bg-pink-100 text-pink-800"
+                    : officer.role === "guidance"
+                    ? "bg-gray-100 text-gray-800"
+                    : "bg-lime-100 text-lime-800"
                 }`}
               >
                 {officer.role === "clearingOfficer"
@@ -588,7 +600,21 @@ const AddClearingOfficer = () => {
                   ? "SAO"
                   : officer.role === "registrar"
                   ? "Registrar"
-                  : "Admin"}
+                  : officer.role === "admin"
+                  ? "Admin"
+                  : officer.role === "dean"
+                  ? "Dean"
+                  : officer.role === "cashier"
+                  ? "Cashier"
+                  : officer.role === "laboratory"
+                  ? "Laboratory"
+                  : officer.role === "library"
+                  ? "Library"
+                  : officer.role === "tailoring"
+                  ? "Tailoring"
+                  : officer.role === "guidance"
+                  ? "Guidance"
+                  : "Other"}
               </span>
             </div>
           </TableCell>
@@ -964,6 +990,12 @@ const AddClearingOfficer = () => {
                     SAO (Student Affairs Officer)
                   </SelectItem>
                   <SelectItem value="registrar">Registrar</SelectItem>
+                  <SelectItem value="cashier">Cashier</SelectItem>
+                  <SelectItem value="laboratory">Computer Laboratory</SelectItem>
+                  <SelectItem value="guidance">Guidance</SelectItem>
+                  <SelectItem value="library">Library</SelectItem>
+                  <SelectItem value="tailoring">Tailoring</SelectItem>
+                  <SelectItem value="dean">Dean</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>

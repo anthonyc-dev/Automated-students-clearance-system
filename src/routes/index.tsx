@@ -62,7 +62,17 @@ const AppRoutes: React.FC = () => {
         path="/clearing-officer"
         element={
           <ProtectedRoute
-            allowedRoles={["clearingOfficer", "sao", "registrar"]}
+            allowedRoles={[
+              "clearingOfficer",
+              "sao",
+              "registrar",
+              "cashier",
+              "laboratory",
+              "library",
+              "tailoring",
+              "guidance",
+              "dean",
+            ]}
           >
             <ClearingOfficerLayout />
           </ProtectedRoute>
@@ -101,7 +111,18 @@ const AppRoutes: React.FC = () => {
         <Route
           path="sao/requirements"
           element={
-            <ProtectedRoute allowedRoles={["sao", "registrar"]}>
+            <ProtectedRoute
+              allowedRoles={[
+                "sao",
+                "registrar",
+                "cashier",
+                "laboratory",
+                "library",
+                "tailoring",
+                "guidance",
+                "dean",
+              ]}
+            >
               <Requirements />
             </ProtectedRoute>
           }
@@ -109,7 +130,18 @@ const AppRoutes: React.FC = () => {
         <Route
           path="sao/students/:reqId"
           element={
-            <ProtectedRoute allowedRoles={["sao", "registrar"]}>
+            <ProtectedRoute
+              allowedRoles={[
+                "sao",
+                "registrar",
+                "cashier",
+                "laboratory",
+                "library",
+                "tailoring",
+                "guidance",
+                "dean",
+              ]}
+            >
               <SaoOfficer />
             </ProtectedRoute>
           }

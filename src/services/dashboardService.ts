@@ -28,6 +28,12 @@ export interface DashboardStats {
     sao: number;
     registrar: number;
     admin: number;
+    guidance: number;
+    dean: number;
+    library: number;
+    laboratory: number;
+    cashier: number;
+    tailoring: number;
   };
 }
 
@@ -100,6 +106,17 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
       registrar: officers.filter((o: ClearingOfficer) => o.role === "registrar")
         .length,
       admin: officers.filter((o: ClearingOfficer) => o.role === "admin").length,
+      guidance: officers.filter((o: ClearingOfficer) => o.role === "guidance")
+        .length,
+      dean: officers.filter((o: ClearingOfficer) => o.role === "dean").length,
+      library: officers.filter((o: ClearingOfficer) => o.role === "library")
+        .length,
+      laboratory: officers.filter((o: ClearingOfficer) => o.role === "laboratory")
+        .length,
+      cashier: officers.filter((o: ClearingOfficer) => o.role === "cashier")
+        .length,
+      tailoring: officers.filter((o: ClearingOfficer) => o.role === "tailoring")
+        .length,
     };
 
     // Calculate requirement statistics

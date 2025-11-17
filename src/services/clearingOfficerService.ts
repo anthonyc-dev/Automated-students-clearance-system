@@ -3,7 +3,17 @@ import axiosInstance from "@/api/axios";
 /**
  * Clearing officer role types
  */
-export type ClearingOfficerRole = "clearingOfficer" | "sao" | "registrar" | "admin";
+export type ClearingOfficerRole =
+  | "clearingOfficer"
+  | "sao"
+  | "registrar"
+  | "admin"
+  | "cashier"
+  | "dean"
+  | "library"
+  | "tailoring"
+  | "guidance"
+  | "laboratory";
 
 /**
  * Interface representing a Clearing Officer in the system
@@ -67,7 +77,9 @@ interface ClearingOfficerResponse {
  */
 export const getAllClearingOfficers = async (): Promise<ClearingOfficer[]> => {
   try {
-    const response = await axiosInstance.get<ClearingOfficerResponse[]>("/auth/getAllClearingOfficers");
+    const response = await axiosInstance.get<ClearingOfficerResponse[]>(
+      "/auth/getAllClearingOfficers"
+    );
     const officers = response.data;
 
     // Normalize ID field: handle both 'id' and '_id'
@@ -117,13 +129,19 @@ export const createClearingOfficer = async (
     console.error("Error creating clearing officer:", error);
 
     // Type guard for axios error
-    if (error && typeof error === 'object' && 'response' in error) {
-      const axiosError = error as { response?: { data?: { message?: string; error?: string }; status?: number } };
+    if (error && typeof error === "object" && "response" in error) {
+      const axiosError = error as {
+        response?: {
+          data?: { message?: string; error?: string };
+          status?: number;
+        };
+      };
       console.error("Error response:", axiosError.response?.data);
       console.error("Error status:", axiosError.response?.status);
 
       // Extract the actual error message from the backend
-      const backendMessage = axiosError.response?.data?.message || axiosError.response?.data?.error;
+      const backendMessage =
+        axiosError.response?.data?.message || axiosError.response?.data?.error;
       if (backendMessage) {
         throw new Error(backendMessage);
       }

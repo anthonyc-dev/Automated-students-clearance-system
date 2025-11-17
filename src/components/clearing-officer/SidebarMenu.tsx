@@ -144,15 +144,37 @@ export function AppSidebar({ closeSidebar }: CloseSidebarProps) {
         <nav className="space-y-1">
           {navbar.map((item, index) => {
             // Hide `/clearing-officer/clearance` and `/clearing-officer/viewCourses` if user role is "sao" or "registrar"
+            // Hide `/clearing-officer/clearance` and `/clearing-officer/viewCourses` if user role is any of the officer roles except "clearingOfficer"
+            const officerRoles = [
+              "sao",
+              "registrar",
+              "cashier",
+              "laboratory",
+              "library",
+              "tailoring",
+              "guidance",
+              "dean",
+            ];
             const shouldHideForSao =
-              (user?.role === "sao" || user?.role === "registrar") &&
+              officerRoles.includes(user?.role ?? "") &&
               (item.to === "/clearing-officer/clearance" ||
                 item.to === "/clearing-officer/viewCourses");
 
             // Show `/clearing-officer/sao` and `/clearing-officer/sao/post-requirements` only for "sao" or "registrar" role
+            // Hide `/clearing-officer/sao/students` and `/clearing-officer/sao/requirements`
+            // unless the user is one of these officer roles
+            const officerRolesForSaoPages = [
+              "sao",
+              "registrar",
+              "cashier",
+              "laboratory",
+              "library",
+              "tailoring",
+              "guidance",
+              "dean",
+            ];
             const shouldHideForNonSao =
-              user?.role !== "sao" &&
-              user?.role !== "registrar" &&
+              !officerRolesForSaoPages.includes(user?.role ?? "") &&
               (item.to === "/clearing-officer/sao/students" ||
                 item.to === "/clearing-officer/sao/requirements");
 
@@ -218,6 +240,18 @@ export function AppSidebar({ closeSidebar }: CloseSidebarProps) {
                     ? "SAO"
                     : user?.role === "registrar"
                     ? "Registrar"
+                    : user?.role === "cashier"
+                    ? "Cashier"
+                    : user?.role === "laboratory"
+                    ? "Laboratory"
+                    : user?.role === "library"
+                    ? "Library"
+                    : user?.role === "tailoring"
+                    ? "Tailoring"
+                    : user?.role === "guidance"
+                    ? "Guidance"
+                    : user?.role === "dean"
+                    ? "Dean"
                     : "Who are you?"}
                 </p>
               </div>

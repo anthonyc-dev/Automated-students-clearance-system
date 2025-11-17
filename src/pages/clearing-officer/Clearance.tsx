@@ -423,10 +423,44 @@ const Clearance = () => {
       await addDoc(collection(db, "notifications"), {
         userId: user?.id,
         title: "Requirement Created",
-        message: `A new requirement for ${newRequirement.courseName} has been added.`,
+        message: `A new requirement for ${
+          newRequirement.courseName
+        } has been added. Requirements: ${newRequirement.requirements.join(
+          ", "
+        )}`,
         isRead: false,
         createdAt: serverTimestamp(),
       });
+
+      // // Fetch all students and send SMS to everyone
+
+      // const allStudents = await getAllStudents();
+
+      // console.log("📊 Total students fetched:", allStudents.length);
+
+      // // Extract phone numbers from all students (no filtering)
+      // const phoneNumbers = allStudents
+      //   .map((student) => student.phoneNumber)
+      //   .filter((phone) => phone && phone.trim() !== ""); // Filter out empty phone numbers
+
+      // console.log("📱 Valid phone numbers found:", phoneNumbers.length);
+
+      // if (phoneNumbers.length > 0) {
+      //   // Send SMS to all students
+      //   const smsMessage = `New requirement for ${
+      //     newRequirement.courseName
+      //   }: ${newRequirement.requirements.join(", ")}. Submit before deadline.`;
+
+      //   console.log("📤 Sending SMS to:", phoneNumbers);
+      //   await sendBulkSms(phoneNumbers, smsMessage);
+
+      //   console.log(
+      //     `✅ SMS sent to ${phoneNumbers.length} student(s) for ${newRequirement.courseName}`
+      //   );
+      // } else {
+      //   console.log("ℹ️ No students with valid phone numbers found");
+      // }
+
       console.log("Created requirement:", response.data);
 
       // Close dialog

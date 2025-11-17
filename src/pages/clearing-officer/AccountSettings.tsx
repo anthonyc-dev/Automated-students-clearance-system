@@ -1,13 +1,5 @@
 import React, { useState, type ChangeEvent } from "react";
-import {
-  User,
-  Lock,
-  Trash2,
-  Upload,
-  Mail,
-  AlertCircle,
-  Phone,
-} from "lucide-react";
+import { User, Lock, Upload, Mail, Phone } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,15 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+
 import { useAuth } from "@/authentication/useAuth";
 import {
   updateUserProfile,
@@ -38,7 +22,7 @@ import { toast } from "react-toastify";
 
 const AccountSettings = () => {
   const { user, updateUser } = useAuth();
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  // const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
@@ -186,14 +170,14 @@ const AccountSettings = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    setLoading(true);
-    // TODO: Implement delete account functionality when endpoint is ready
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setLoading(false);
-    setIsDeleteModalOpen(false);
-    toast.info("Delete account functionality will be implemented soon.");
-  };
+  // const handleDeleteAccount = async () => {
+  //   setLoading(true);
+  //   // TODO: Implement delete account functionality when endpoint is ready
+  //   await new Promise((resolve) => setTimeout(resolve, 1000));
+  //   setLoading(false);
+  //   setIsDeleteModalOpen(false);
+  //   toast.info("Delete account functionality will be implemented soon.");
+  // };
 
   const handleAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -480,7 +464,7 @@ const AccountSettings = () => {
       </Card>
 
       {/* Delete Account Section */}
-      <Card className="border-destructive">
+      {/* <Card className="border-destructive">
         <CardHeader>
           <CardTitle className="text-destructive">Delete Account</CardTitle>
           <CardDescription>
@@ -527,7 +511,7 @@ const AccountSettings = () => {
             </DialogContent>
           </Dialog>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 };

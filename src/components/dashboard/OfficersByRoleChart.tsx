@@ -1,5 +1,12 @@
 import { Card } from "antd";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from "recharts";
 
 interface OfficersByRoleChartProps {
   data: {
@@ -7,16 +14,39 @@ interface OfficersByRoleChartProps {
     sao: number;
     registrar: number;
     admin: number;
+    guidance: number;
+    dean: number;
+    library: number;
+    laboratory: number;
+    cashier: number;
+    tailoring: number;
   };
 }
 
-const COLORS = ["#1890ff", "#52c41a", "#722ed1", "#fa8c16"];
+const COLORS = [
+  "#1890ff", // blue - clearing officer
+  "#52c41a", // green - sao
+  "#722ed1", // purple - registrar
+  "#fa8c16", // orange - admin
+  "#eb2f96", // pink - guidance
+  "#13c2c2", // cyan - dean
+  "#faad14", // gold - library
+  "#2f54eb", // geekblue - laboratory
+  "#f5222d", // red - cashier
+  "#a0d911", // lime - tailoring
+];
 
 const ROLE_LABELS = {
   clearingOfficer: "Clearing Officers",
   sao: "SAO",
   registrar: "Registrars",
   admin: "Admins",
+  guidance: "Guidance",
+  dean: "Dean",
+  library: "Library",
+  laboratory: "Laboratory",
+  cashier: "Cashier",
+  tailoring: "Tailoring",
 };
 
 const OfficersByRoleChart = ({ data }: OfficersByRoleChartProps) => {
@@ -45,7 +75,10 @@ const OfficersByRoleChart = ({ data }: OfficersByRoleChartProps) => {
             dataKey="value"
           >
             {chartData.map((_entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              <Cell
+                key={`cell-${index}`}
+                fill={COLORS[index % COLORS.length]}
+              />
             ))}
           </Pie>
           <Tooltip />
