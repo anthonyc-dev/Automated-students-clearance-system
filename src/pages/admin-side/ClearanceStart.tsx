@@ -52,6 +52,9 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { AxiosError } from "axios";
 import axiosInstance from "@/api/axios";
+import { db } from "@/config/firebaseConfig";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { useAuth } from "@/authentication/useAuth";
 
 interface ClearanceStatus {
   id?: string;
@@ -99,6 +102,10 @@ export const ClearanceStart = () => {
   const [deadlineDate, setDeadlineDate] = useState<Date | undefined>(undefined);
 
   console.log(status);
+
+  const { user } = useAuth();
+
+  console.log("admin id", user);
 
   // Helper function to transform API response to component state
   const transformApiResponse = useCallback(
@@ -198,6 +205,7 @@ export const ClearanceStart = () => {
       message.success(
         "Clearance setup completed! You can now start clearance."
       );
+
       setIsSetupDialogOpen(false);
 
       // Reset form
@@ -248,6 +256,8 @@ export const ClearanceStart = () => {
       const updatedStatus = transformApiResponse(response.data);
       setStatus(updatedStatus);
 
+      console.log(response);
+
       // Update the allClearances array to reflect changes in table
       setAllClearances((prevClearances) =>
         prevClearances.map((clearance) =>
@@ -256,6 +266,31 @@ export const ClearanceStart = () => {
       );
 
       message.success("Clearance started successfully!");
+
+      const formatDatePH = (value: string | Date | null | undefined) => {
+        if (!value) return "N/A"; // fallback if missing
+
+        const date = value instanceof Date ? value : new Date(value);
+
+        return date.toLocaleDateString("en-PH", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          timeZone: "Asia/Manila",
+        });
+      };
+
+      const startDate = formatDatePH(status?.startDate);
+      const deadline = formatDatePH(status?.deadline);
+
+      await addDoc(collection(db, "notifications"), {
+        userId: user?.id,
+        title: "Clearance Started",
+        message: `The clearance process has officially started for the ${status?.semesterType}, Academic Year ${status?.academicYear}. Start Date: ${startDate}. Deadline: ${deadline}. `,
+        isRead: false,
+        createdAt: serverTimestamp(),
+      });
+
       // Ensure UI reflects the latest server state immediately
       await fetchClearanceStatus();
     } catch (error) {
@@ -297,6 +332,15 @@ export const ClearanceStart = () => {
       );
 
       message.success("Clearance stopped successfully!");
+
+      await addDoc(collection(db, "notifications"), {
+        userId: user?.id,
+        title: "Clearance Stopped",
+        message: `The clearance process for the ${status?.semesterType}, Academic Year ${status?.academicYear} has been stopped. Please wait for further instructions from the administration.`,
+        isRead: false,
+        createdAt: serverTimestamp(),
+      });
+
       // Ensure UI reflects the latest server state immediately
       await fetchClearanceStatus();
     } catch (error) {
@@ -353,6 +397,30 @@ export const ClearanceStart = () => {
       );
 
       message.success(`Deadline extended to ${format(newDeadline, "PPP")}`);
+
+      const formatDatePH = (value: string | Date | null | undefined) => {
+        if (!value) return "N/A"; // fallback if missing
+
+        const date = value instanceof Date ? value : new Date(value);
+
+        return date.toLocaleDateString("en-PH", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          timeZone: "Asia/Manila",
+        });
+      };
+
+      const extendedDeadline = formatDatePH(status?.extendedDeadline);
+
+      await addDoc(collection(db, "notifications"), {
+        userId: user?.id,
+        title: "Clearance Deadline Extended",
+        message: `The clearance deadline for the ${status?.semesterType}, Academic Year ${status?.academicYear} has been extended. Your new deadline is ${extendedDeadline}.`,
+        isRead: false,
+        createdAt: serverTimestamp(),
+      });
+
       setIsExtendDialogOpen(false);
       setNewDeadline(undefined);
       // Ensure UI reflects the latest server state immediately

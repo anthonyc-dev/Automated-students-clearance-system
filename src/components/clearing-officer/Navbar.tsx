@@ -11,12 +11,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useState, useEffect, useRef } from "react";
-import NotificationDrawer from "../NotificationDrawer";
 import { useAuth } from "../../authentication/useAuth";
 import { QRScannerModal } from "./QRScannerModal";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 import { toast } from "sonner";
+import NotificationDrawer from "./NotificationDrawer";
 
 interface NavbarProps {
   toggleSidebar: () => void;
@@ -56,14 +56,9 @@ const Navbar = ({ toggleSidebar }: NavbarProps) => {
         ...doc.data(),
       })) as Notification[];
 
-      // Filter by userId if notifications have userId field
-      const userNotifications = list.filter(
-        (n) => !n.userId || n.userId === user.id
-      );
-
       // Detect new notifications and show toast
       if (!isInitialLoad.current) {
-        const newNotifications = userNotifications.filter(
+        const newNotifications = list.filter(
           (n) => !previousNotificationIds.current.has(n.id)
         );
 
@@ -84,11 +79,10 @@ const Navbar = ({ toggleSidebar }: NavbarProps) => {
       }
 
       // Update previous notification IDs
-      previousNotificationIds.current = new Set(
-        userNotifications.map((n) => n.id)
-      );
+      previousNotificationIds.current = new Set(list.map((n) => n.id));
 
-      setNotifications(userNotifications);
+      // Show all notifications without filtering
+      setNotifications(list);
     });
 
     return () => unsubscribe();

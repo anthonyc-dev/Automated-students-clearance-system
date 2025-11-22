@@ -40,6 +40,9 @@ import {
   fetchClearingOfficerDashboardStats,
   type ClearingOfficerDashboardStats,
 } from "@/services/clearingOfficerDashboardService";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "@/config/firebaseConfig";
+import { sendBulkSms } from "@/services/sendSms";
 
 interface Requirement {
   _id?: string;
@@ -82,7 +85,7 @@ const ellipsize = (text: string, limit = 120) =>
 
 const Requirements = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -317,7 +320,11 @@ const Requirements = () => {
         );
 
         // Handle different response structures
-        let studentsData: Array<{ id: string; schoolId: string }> = [];
+        let studentsData: Array<{
+          id: string;
+          schoolId: string;
+          phone: string;
+        }> = [];
 
         if (Array.isArray(studentsResponse.data)) {
           studentsData = studentsResponse.data;
@@ -335,6 +342,8 @@ const Requirements = () => {
 
         console.log(`📚 Found ${studentsData.length} enrolled students`);
 
+        console.log("student req", studentsData);
+
         if (studentsData.length > 0) {
           // Create student requirements for all students
           const studentRequirements = studentsData.map((student) => ({
@@ -344,6 +353,8 @@ const Requirements = () => {
             signedBy: user.role || "sao",
             status: "incomplete" as const,
           }));
+
+          console.log("Reqqqqqqq", studentRequirements);
 
           console.log(
             `📝 Creating ${studentRequirements.length} student requirements...`
@@ -364,6 +375,23 @@ const Requirements = () => {
               "Requirement created, but failed to create student requirements."
             );
           }
+
+          //notification
+          await addDoc(collection(db, "notifications"), {
+            userId: user?.id,
+            title: "Requirement Created",
+            message: `A new requirement for ${newRequirement?.courseCode} has been added.`,
+            isRead: false,
+            createdAt: serverTimestamp(),
+          });
+
+          const phoneNumbers = studentsData.map((student) => student.phone);
+
+          //sms
+          await sendBulkSms(
+            phoneNumbers,
+            `The ${role} Clearing Officer has posted new institutional requirements for your clearance. Please log in to your student portal to review and complete them as soon as possible.`
+          );
         } else {
           message.destroy();
           message.success(
@@ -900,7 +928,7 @@ const Requirements = () => {
                   (vals as string[]).map((v) => v.trim()).filter((v) => v)
                 )
               }
-              tokenSeparators={[",", "\n", " "]}
+              tokenSeparators={[",", "\n"]}
               placeholder="Type a name and press Enter…"
               className="w-full"
               open={false}

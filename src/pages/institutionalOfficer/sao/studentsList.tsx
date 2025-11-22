@@ -948,6 +948,7 @@ export const SaoOfficer = () => {
         `Error ${sign ? "signing" : "undoing"} selected students:`,
         error
       );
+
       message.error(
         `An error occurred while ${
           sign ? "signing" : "undoing signatures for"

@@ -29,11 +29,24 @@ interface Requirement {
 }
 
 const departments = [
-  "Computer Science",
-  "Information Technology",
-  "Computer Engineering",
-  "Information Systems",
-  "Software Engineering",
+  "Bachelor of Science in Hospitality Management",
+  "Electrical Engineering and Computer Science",
+  "Bachelor of Science in Electrical Engineering",
+  "Bachelor of Science in Criminology",
+  "Bachelor of Science in Social Work",
+  "Bachelor of Science in Accountancy",
+  "PARAMED",
+  "Bachelor of Science in Midwifery",
+  "Bachelor of Science in Medical Technology",
+  "Bachelor of Science in Nursing",
+  "Bachelor of Science in Business Administration",
+  "Bachelor of Elementary Education",
+  "Bachelor of Arts in Political Science",
+  "CEDCAS",
+  "Bachelor in Secondary Education Major in Mathematics",
+  "Bachelor in Secondary Education Major in Science",
+  "Bachelor in Secondary Education Major in English",
+  "All Departments",
 ];
 
 const Requirements = () => {
