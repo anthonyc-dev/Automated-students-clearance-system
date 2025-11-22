@@ -1,4 +1,4 @@
-import axiosInstance from "@/api/axios";
+import axiosInstance, { API_URL } from "@/api/axios";
 import { message } from "antd";
 import axios from "axios";
 
@@ -59,15 +59,13 @@ export interface UpdateCourseDto {
   dueDate: string;
 }
 
-const INTIGRATION_API = "http://localhost:4000";
-
 export const getCoursesBySchoolId = async (
   schoolId: string
 ): Promise<Course[] | null> => {
   try {
     const encodedSchoolId = encodeURIComponent(schoolId);
     const response = await axios.get(
-      `${INTIGRATION_API}/intigration/getCoursesBySchoolId/${encodedSchoolId}`
+      `${API_URL}/intigration/getCoursesBySchoolId/${encodedSchoolId}`
     );
     return response.data;
   } catch (error: unknown) {
