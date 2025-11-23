@@ -577,12 +577,18 @@ const AddClearingOfficer = () => {
                     ? "bg-red-100 text-red-800"
                     : officer.role === "sao"
                     ? "bg-purple-100 text-purple-800"
+                    : officer.role === "umsa"
+                    ? "bg-teal-100 text-teal-800"
+                    : officer.role === "sgo"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : officer.role === "kahayag"
+                    ? "bg-amber-100 text-amber-800"
                     : officer.role === "registrar"
                     ? "bg-blue-100 text-blue-800"
                     : officer.role === "dean"
                     ? "bg-orange-100 text-orange-800"
                     : officer.role === "cashier"
-                    ? "bg-yellow-100 text-yellow-800"
+                    ? "bg-yellow-200 text-yellow-900"
                     : officer.role === "laboratory"
                     ? "bg-green-100 text-green-800"
                     : officer.role === "library"
@@ -598,6 +604,12 @@ const AddClearingOfficer = () => {
                   ? "Clearing Officer"
                   : officer.role === "sao"
                   ? "SAO"
+                  : officer.role === "umsa"
+                  ? "UMSA"
+                  : officer.role === "sgo"
+                  ? "SGO"
+                  : officer.role === "kahayag"
+                  ? "Kahayag"
                   : officer.role === "registrar"
                   ? "Registrar"
                   : officer.role === "admin"
@@ -989,9 +1001,14 @@ const AddClearingOfficer = () => {
                   <SelectItem value="sao">
                     SAO (Student Affairs Officer)
                   </SelectItem>
+                  <SelectItem value="umsa">UMSA</SelectItem>
+                  <SelectItem value="sgo">SGO</SelectItem>
+                  <SelectItem value="kahayag">Kahayag</SelectItem>
                   <SelectItem value="registrar">Registrar</SelectItem>
                   <SelectItem value="cashier">Cashier</SelectItem>
-                  <SelectItem value="laboratory">Computer Laboratory</SelectItem>
+                  <SelectItem value="laboratory">
+                    Computer Laboratory
+                  </SelectItem>
                   <SelectItem value="guidance">Guidance</SelectItem>
                   <SelectItem value="library">Library</SelectItem>
                   <SelectItem value="tailoring">Tailoring</SelectItem>

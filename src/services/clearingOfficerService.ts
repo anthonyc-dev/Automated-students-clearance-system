@@ -6,6 +6,9 @@ import axiosInstance from "@/api/axios";
 export type ClearingOfficerRole =
   | "clearingOfficer"
   | "sao"
+  | "umsa"
+  | "sgo"
+  | "kahayag"
   | "registrar"
   | "admin"
   | "cashier"

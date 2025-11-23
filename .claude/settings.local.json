@@ -9,7 +9,8 @@
       "Bash(pnpm list:*)",
       "Bash(cd:*)",
       "Bash(dir:*)",
-      "Read(//c/Users/Hp/Desktop/Developer Files/Personal Project/Online Clearance/**)"
+      "Read(//c/Users/Hp/Desktop/Developer Files/Personal Project/Online Clearance/**)",
+      "Bash(pnpm add:*)"
     ],
     "deny": [],
     "ask": []

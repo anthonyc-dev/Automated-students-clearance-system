@@ -152,6 +152,9 @@ export function AppSidebar({ closeSidebar }: CloseSidebarProps) {
             // Hide `/clearing-officer/clearance` and `/clearing-officer/viewCourses` if user role is any of the officer roles except "clearingOfficer"
             const officerRoles = [
               "sao",
+              "umsa",
+              "sgo",
+              "kahayag",
               "registrar",
               "cashier",
               "laboratory",
@@ -170,6 +173,9 @@ export function AppSidebar({ closeSidebar }: CloseSidebarProps) {
             // unless the user is one of these officer roles
             const officerRolesForSaoPages = [
               "sao",
+              "umsa",
+              "sgo",
+              "kahayag",
               "registrar",
               "cashier",
               "laboratory",

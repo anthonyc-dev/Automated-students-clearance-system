@@ -171,6 +171,9 @@ export default function Login() {
           } else if (
             role === "clearingOfficer" ||
             role === "sao" ||
+            role === "umsa" ||
+            role === "sgo" ||
+            role === "kahayag" ||
             role === "registrar" ||
             role === "cashier" ||
             role === "laboratory" ||
