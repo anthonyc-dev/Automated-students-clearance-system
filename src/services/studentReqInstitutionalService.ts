@@ -391,7 +391,9 @@ export const bulkUpdateToMissingStatusIns = async (
     }
 
     if (failed > 0) {
-      console.warn(`⚠️ [Institutional] ${failed} requirements failed to update`);
+      console.warn(
+        `⚠️ [Institutional] ${failed} requirements failed to update`
+      );
     }
 
     return { updated, failed };
@@ -401,5 +403,155 @@ export const bulkUpdateToMissingStatusIns = async (
       error
     );
     return { updated: 0, failed: requirements.length };
+  }
+};
+
+/**
+ * Check if a student is fully cleared by all clearing officers (including institutional)
+ * A student is considered cleared when all their requirements have status "signed"
+ * @param studentId - The student's ID to check
+ * @param allRequirements - Array of all student requirements (institutional)
+ * @returns boolean - true if student is fully cleared, false otherwise
+ */
+export const isStudentFullyClearedIns = (
+  studentId: string,
+  allRequirements: StudentRequirement[]
+): boolean => {
+  // Get all requirements for this specific student
+  const studentRequirements = allRequirements.filter(
+    (req) => req.studentId === studentId
+  );
+
+  // If no requirements found, student is not cleared
+  if (studentRequirements.length === 0) {
+    return false;
+  }
+
+  // Check if ALL requirements for this student have "signed" status
+  const allSigned = studentRequirements.every((req) => req.status === "signed");
+
+  console.log(`🔍 [Institutional] Clearance check for student ${studentId}:`, {
+    totalRequirements: studentRequirements.length,
+    signedRequirements: studentRequirements.filter((r) => r.status === "signed")
+      .length,
+    isFullyCleared: allSigned,
+  });
+
+  return allSigned;
+};
+
+/**
+ * Get clearance statistics for a student (institutional requirements)
+ * Returns detailed breakdown of signed/incomplete/missing requirements
+ * @param studentId - The student's ID
+ * @param allRequirements - Array of all student requirements (institutional)
+ * @returns Clearance statistics object
+ */
+export const getStudentClearanceStatsIns = (
+  studentId: string,
+  allRequirements: StudentRequirement[]
+): {
+  total: number;
+  signed: number;
+  incomplete: number;
+  missing: number;
+  isCleared: boolean;
+} => {
+  const studentRequirements = allRequirements.filter(
+    (req) => req.studentId === studentId
+  );
+
+  const signed = studentRequirements.filter(
+    (req) => req.status === "signed"
+  ).length;
+  const incomplete = studentRequirements.filter(
+    (req) => req.status === "incomplete"
+  ).length;
+  const missing = studentRequirements.filter(
+    (req) => req.status === "missing"
+  ).length;
+
+  return {
+    total: studentRequirements.length,
+    signed,
+    incomplete,
+    missing,
+    isCleared:
+      studentRequirements.length > 0 && signed === studentRequirements.length,
+  };
+};
+
+/**
+ * Get institutional student requirements by studentId
+ * GET /institutionalReq/getStudentRequirementsByStudentId/:studentId
+ * @param studentId - The student's database ID
+ * @returns Array of institutional student requirements with populated data
+ */
+export const getStudentRequirementsByStudentIdIns = async (
+  studentId: string
+): Promise<StudentRequirement[]> => {
+  try {
+    console.log(
+      "📤 [Institutional] Fetching student requirements by studentId:",
+      studentId
+    );
+    console.log(
+      `📍 Endpoint: GET /institutionalReq/getStudentRequirementsByStudentId/${studentId}`
+    );
+
+    const response = await axiosInstance.get(
+      `/institutionalReq/getStudentRequirementsByStudentId/${studentId}`
+    );
+
+    console.log("✅ [Institutional] Response received:", response.data);
+
+    // Check if response has nested data property
+    const requirements = Array.isArray(response.data)
+      ? response.data
+      : response.data.data || [];
+
+    console.log(
+      `✅ [Institutional] Total requirements fetched for student ${studentId}: ${requirements.length}`
+    );
+    console.log("✅ [Institutional] Sample requirement:", requirements[0]);
+
+    console.log("✅ [Institutional] Sample requirement:", requirements);
+
+    return requirements;
+  } catch (error: unknown) {
+    console.error("❌ [Institutional] Full error object:", error);
+
+    if (error && typeof error === "object" && "response" in error) {
+      const axiosError = error as {
+        response?: {
+          data?: { message?: string; error?: string };
+          status?: number;
+          statusText?: string;
+        };
+      };
+      console.error(
+        "❌ [Institutional] Error response data:",
+        axiosError.response?.data
+      );
+      console.error(
+        "❌ [Institutional] Error status:",
+        axiosError.response?.status
+      );
+      console.error(
+        "❌ [Institutional] Error status text:",
+        axiosError.response?.statusText
+      );
+    }
+
+    const errorMessage = getErrorMessage(
+      error,
+      "Failed to fetch institutional student requirements by studentId"
+    );
+    message.error(errorMessage);
+    console.error(
+      "[Institutional] Get student requirements by studentId error:",
+      error
+    );
+    return [];
   }
 };

@@ -132,9 +132,9 @@ export default function Login() {
             />
 
             <div className="text-sm my-5 flex justify-end">
-              <a href="#" className=" text-indigo-600 hover:text-indigo-500">
+              {/* <a href="#" className=" text-indigo-600 hover:text-indigo-500">
                 Forgot password?
-              </a>
+              </a> */}
             </div>
 
             <AuthButton isLoading={isLoading} label="Log in" type="submit" />

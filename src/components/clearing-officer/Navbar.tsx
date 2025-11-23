@@ -16,7 +16,7 @@ import { QRScannerModal } from "./QRScannerModal";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 import { toast } from "sonner";
-import NotificationDrawer from "./NotificationDrawer";
+import NotificationDrawer from "../NotificationDrawer";
 
 interface NavbarProps {
   toggleSidebar: () => void;
@@ -56,9 +56,14 @@ const Navbar = ({ toggleSidebar }: NavbarProps) => {
         ...doc.data(),
       })) as Notification[];
 
+      // Filter by userId if notifications have userId field
+      const userNotifications = list.filter(
+        (n) => !n.userId || n.userId === user.id
+      );
+
       // Detect new notifications and show toast
       if (!isInitialLoad.current) {
-        const newNotifications = list.filter(
+        const newNotifications = userNotifications.filter(
           (n) => !previousNotificationIds.current.has(n.id)
         );
 
@@ -79,10 +84,11 @@ const Navbar = ({ toggleSidebar }: NavbarProps) => {
       }
 
       // Update previous notification IDs
-      previousNotificationIds.current = new Set(list.map((n) => n.id));
+      previousNotificationIds.current = new Set(
+        userNotifications.map((n) => n.id)
+      );
 
-      // Show all notifications without filtering
-      setNotifications(list);
+      setNotifications(userNotifications);
     });
 
     return () => unsubscribe();

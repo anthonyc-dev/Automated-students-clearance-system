@@ -25,6 +25,7 @@ export interface StudentRequirement {
   studentId: string;
   coId: string;
   requirementId: string;
+  signedBy: string;
   status: string;
   createdAt?: string;
   updatedAt?: string;
@@ -228,6 +229,28 @@ export const findExistingStudentRequirement = (
 };
 
 /**
+ * Find existing student requirement by studentId, coId, requirementId, AND signedBy role
+ * This ensures role-specific requirement filtering
+ * Returns the student requirement if it exists for the specific role, null otherwise
+ */
+export const findExistingStudentRequirementByRole = (
+  allRequirements: StudentRequirement[],
+  studentId: string,
+  coId: string,
+  requirementId: string,
+  signedByRole: string
+): StudentRequirement | null => {
+  const found = allRequirements.find(
+    (req) =>
+      req.studentId === studentId &&
+      req.coId === coId &&
+      req.requirementId === requirementId &&
+      req.signedBy === signedByRole
+  );
+  return found || null;
+};
+
+/**
  * Update student requirement by ID
  * PUT /studentReq/updateStudentRequirement/:id
  */
@@ -236,7 +259,8 @@ export const updateStudentRequirement = async (
   status: "signed" | "incomplete" | "missing",
   studentId?: string,
   coId?: string,
-  requirementId?: string
+  requirementId?: string,
+  signedBy?: string
 ): Promise<StudentRequirement | null> => {
   try {
     console.log("📤 Updating student requirement:");
@@ -258,11 +282,13 @@ export const updateStudentRequirement = async (
       studentId?: string;
       coId?: string;
       requirementId?: string;
+      signedBy?: string;
     } = { status };
 
     if (studentId) requestBody.studentId = studentId;
     if (coId) requestBody.coId = coId;
     if (requirementId) requestBody.requirementId = requirementId;
+    if (signedBy) requestBody.signedBy = signedBy;
 
     console.log("📦 Request body:", requestBody);
 
@@ -341,7 +367,8 @@ export const bulkUpdateToMissingStatus = async (
         "missing",
         req.studentId,
         req.coId,
-        req.requirementId
+        req.requirementId,
+        req.signedBy
       )
     );
 
@@ -353,7 +380,9 @@ export const bulkUpdateToMissingStatus = async (
     ).length;
     const failed = results.length - updated;
 
-    console.log(`✅ Bulk update complete: ${updated} updated, ${failed} failed`);
+    console.log(
+      `✅ Bulk update complete: ${updated} updated, ${failed} failed`
+    );
 
     if (updated > 0) {
       message.info(
@@ -370,5 +399,63 @@ export const bulkUpdateToMissingStatus = async (
   } catch (error: unknown) {
     console.error("❌ Error in bulk update to missing status:", error);
     return { updated: 0, failed: requirements.length };
+  }
+};
+
+/**
+ * Get student requirements by schoolId
+ * GET /studentReq/getStudentRequirementsBySchoolId/:schoolId
+ * @param schoolId - The student's school ID
+ * @returns Array of student requirements with populated data
+ */
+export const getStudentRequirementsBySchoolId = async (
+  schoolId: string
+): Promise<StudentRequirement[]> => {
+  try {
+    console.log("📤 Fetching student requirements by schoolId:", schoolId);
+    console.log(
+      `📍 Endpoint: GET /studentReq/getStudentRequirementsBySchoolId/${schoolId}`
+    );
+
+    const response = await axiosInstance.get(
+      `/studentReq/getStudentRequirementsBySchoolId/${schoolId}`
+    );
+
+    console.log("✅ Response received:", response.data);
+
+    // Check if response has nested data property
+    const requirements = Array.isArray(response.data)
+      ? response.data
+      : response.data.data || [];
+
+    console.log(
+      `✅ Total requirements fetched for student ${schoolId}: ${requirements.length}`
+    );
+    console.log("✅ Sample requirement:", requirements[0]);
+
+    return requirements;
+  } catch (error: unknown) {
+    console.error("❌ Full error object:", error);
+
+    if (error && typeof error === "object" && "response" in error) {
+      const axiosError = error as {
+        response?: {
+          data?: { message?: string; error?: string };
+          status?: number;
+          statusText?: string;
+        };
+      };
+      console.error("❌ Error response data:", axiosError.response?.data);
+      console.error("❌ Error status:", axiosError.response?.status);
+      console.error("❌ Error status text:", axiosError.response?.statusText);
+    }
+
+    const errorMessage = getErrorMessage(
+      error,
+      "Failed to fetch student requirements by schoolId"
+    );
+    message.error(errorMessage);
+    console.error("Get student requirements by schoolId error:", error);
+    return [];
   }
 };

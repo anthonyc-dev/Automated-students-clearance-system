@@ -13,6 +13,7 @@ import {
   Clock,
   Building,
   Calendar,
+  User,
 } from "lucide-react";
 import {
   Table,
@@ -34,7 +35,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/dialog";
 import TooltipDemo from "@/components/HoverToolip";
 import PaginationComponent from "./_components/PaginationComponent";
-import { Spin, message } from "antd";
+import { Spin, message, Modal } from "antd";
 import {
   getAllStudentSpecificSubject,
   getMultipleStudentsBySchoolIds,
@@ -59,6 +59,10 @@ import {
   findExistingStudentRequirement,
   type StudentRequirement,
 } from "@/services/studentRequirementService";
+import {
+  revokeStudentPermit,
+  checkStudentPermit,
+} from "@/services/permitService";
 
 interface ApiStudentData {
   id?: string;
@@ -76,12 +80,13 @@ interface ApiStudentData {
 
 interface Student {
   id: string;
+  schoolId: string;
   name: string;
   email: string;
   id_no: string;
   cp_no: string;
   profilePic: string;
-  status: string;
+  status: "Signed" | "Incomplete" | "Missing" | "Cleared";
   initials: string;
   yearLevel: string;
   department: string;
@@ -102,7 +107,7 @@ const StudentRecord: React.FC = () => {
     courseCode: string;
     reqId: string;
   }>();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
 
   const [isLoadingStudents, setIsLoadingStudents] = useState(true);
   const [studentList, setStudentList] = useState<Student[]>([]);
@@ -117,8 +122,15 @@ const StudentRecord: React.FC = () => {
   const [allStudentRequirements, setAllStudentRequirements] = useState<
     StudentRequirement[]
   >([]);
+  const [studentsWithPermits, setStudentsWithPermits] = useState<Set<string>>(
+    new Set()
+  );
+  // Map of studentId -> permitId for revocation
+  const [studentPermitIds, setStudentPermitIds] = useState<Map<string, string>>(
+    new Map()
+  );
 
-  const statuses = ["all", "Signed", "Incomplete", "Missing"];
+  const statuses = ["all", "Cleared", "Signed", "Incomplete", "Missing"];
   const studentsPerPage = 10;
 
   useEffect(() => {
@@ -197,6 +209,7 @@ const StudentRecord: React.FC = () => {
 
             return {
               id: student.id || student.schoolId || "N/A",
+              schoolId: student.schoolId ?? "N/A",
               name: fullName || "Unknown Student",
               email: student.email ?? "N/A",
               id_no: student.schoolId ?? "N/A",
@@ -204,7 +217,7 @@ const StudentRecord: React.FC = () => {
               profilePic: student.profilePic ?? "",
               department: student.department ?? "",
               yearLevel: student.yearLevel ?? "",
-              status: "Incomplete",
+              status: "Incomplete" as const,
               initials: initials || "?",
             };
           }
@@ -254,12 +267,12 @@ const StudentRecord: React.FC = () => {
                   ...student,
                   status:
                     requirement.status === "signed"
-                      ? "Signed"
+                      ? ("Signed" as const)
                       : requirement.status === "incomplete"
-                      ? "Incomplete"
+                      ? ("Incomplete" as const)
                       : requirement.status === "missing"
-                      ? "Missing"
-                      : "Incomplete",
+                      ? ("Missing" as const)
+                      : ("Incomplete" as const),
                   studentRequirementId: reqId,
                 };
               }
@@ -267,7 +280,58 @@ const StudentRecord: React.FC = () => {
             }
           );
 
-          setStudentList(studentsWithRequirements);
+          // Check for students with active permits BEFORE setting state
+          console.log("🔍 Checking for students with active permits...");
+          const permitChecks = studentsWithRequirements.map(async (student) => {
+            const permitData = await checkStudentPermit(student.id_no);
+            const permitId = permitData?.permit?.id || null;
+
+            if (permitData && permitId) {
+              console.log(
+                `📋 Student ${student.id_no} has permit ID: ${permitId}`
+              );
+            }
+
+            return {
+              schoolId: student.id_no,
+              hasPermit: permitData !== null,
+              permitId: permitId,
+            };
+          });
+
+          const permitResults = await Promise.all(permitChecks);
+          const studentsWithActivePermits = new Set(
+            permitResults.filter((r) => r.hasPermit).map((r) => r.schoolId)
+          );
+          const permitIdMap = new Map(
+            permitResults
+              .filter((r) => r.hasPermit && r.permitId)
+              .map((r) => [r.schoolId, r.permitId!])
+          );
+
+          console.log(
+            `✅ Found ${studentsWithActivePermits.size} student(s) with active permits`
+          );
+          setStudentsWithPermits(studentsWithActivePermits);
+          setStudentPermitIds(permitIdMap);
+
+          // Update student status to "Cleared" if they have an active permit
+          const studentsWithClearedStatus = studentsWithRequirements.map(
+            (student) => {
+              if (studentsWithActivePermits.has(student.id_no)) {
+                console.log(
+                  `✅ Setting student ${student.id_no} status to "Cleared"`
+                );
+                return {
+                  ...student,
+                  status: "Cleared" as const,
+                };
+              }
+              return student;
+            }
+          );
+
+          setStudentList(studentsWithClearedStatus);
           console.log(
             "✅ Students merged with requirements:",
             studentsWithRequirements
@@ -557,6 +621,24 @@ const StudentRecord: React.FC = () => {
   };
 
   const handleUndoSelected = () => {
+    // Check if any selected students have active permits
+    const selectedStudentsData = studentList.filter((student) =>
+      selectedStudents.includes(student.id)
+    );
+    const studentsWithActivePermits = selectedStudentsData.filter((student) =>
+      studentsWithPermits.has(student.id_no)
+    );
+
+    if (studentsWithActivePermits.length > 0) {
+      const studentNames = studentsWithActivePermits
+        .map((s) => s.name)
+        .join(", ");
+      message.warning(
+        `Cannot undo signature for ${studentsWithActivePermits.length} student(s) with active permits: ${studentNames}`
+      );
+      return;
+    }
+
     setConfirmDialog({
       isOpen: true,
       type: "multiple",
@@ -721,6 +803,14 @@ const StudentRecord: React.FC = () => {
     }
 
     if (student?.status === "Signed") {
+      // Check if student has active permit (QR code)
+      if (studentsWithPermits.has(student.id_no)) {
+        message.warning(
+          `Cannot undo signature for ${student.name}. This student has an active clearance permit (QR code) and has completed all requirements.`
+        );
+        return;
+      }
+
       // If student is already signed, show confirmation to undo
       setConfirmDialog({
         isOpen: true,
@@ -990,6 +1080,73 @@ const StudentRecord: React.FC = () => {
     setConfirmDialog({ isOpen: false });
   };
 
+  const handleRevokePermit = async (studentId: string) => {
+    const student = studentList.find((s) => s.id === studentId);
+    if (!student) {
+      message.error("Student not found");
+      return;
+    }
+
+    const permitId = studentPermitIds.get(student.id_no);
+    console.log(`🔍 Looking up permit ID for student ${student.id_no}`);
+    console.log(`📋 Found permit ID: ${permitId}`);
+    console.log(
+      `📊 All permit IDs in map:`,
+      Array.from(studentPermitIds.entries())
+    );
+
+    if (!permitId) {
+      message.error("Permit ID not found for this student");
+      return;
+    }
+
+    Modal.confirm({
+      title: "Revoke Student Permit",
+      content: `Are you sure you want to revoke the clearance permit for ${student.name}? This action cannot be undone and the student will need to clear requirements again.`,
+      okText: "Revoke Permit",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        try {
+          const hideLoading = message.loading("Revoking permit...", 0);
+
+          await revokeStudentPermit(permitId);
+
+          hideLoading();
+
+          // Remove student from permits set and map
+          setStudentsWithPermits((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(student.id_no);
+            return newSet;
+          });
+
+          setStudentPermitIds((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(student.id_no);
+            return newMap;
+          });
+
+          // Change student status from "Cleared" back to "Signed"
+          setStudentList((prev) =>
+            prev.map((s) =>
+              s.id_no === student.id_no
+                ? { ...s, status: "Signed" as const }
+                : s
+            )
+          );
+
+          message.success(
+            `Successfully revoked permit for ${student.name}. Student status changed to "Signed".`
+          );
+        } catch (error) {
+          console.error("Error revoking permit:", error);
+          message.error("Failed to revoke permit. Please try again.");
+        }
+      },
+    });
+  };
+
   const isAllSelected =
     selectedStudents.length > 0 &&
     selectedStudents.length === filteredStudents.length;
@@ -1024,6 +1181,11 @@ const StudentRecord: React.FC = () => {
                 />
               </div>
               <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground ml-5">
+                <span className="flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4 text-blue-600" />
+                  Cleared:{" "}
+                  {studentList.filter((s) => s.status === "Cleared").length}
+                </span>
                 <span className="flex items-center gap-1">
                   <CheckCircle className="w-4 h-4 text-green-600" />
                   Signed:{" "}
@@ -1145,15 +1307,7 @@ const StudentRecord: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              <Avatar>
-                                <AvatarImage
-                                  src={student.profilePic}
-                                  alt={student.name}
-                                />
-                                <AvatarFallback className="bg-blue-500 text-white font-semibold">
-                                  {student.initials}
-                                </AvatarFallback>
-                              </Avatar>
+                              <User className="w-6 h-6 text-blue-700" />
                               <div className="flex flex-col justify-center ">
                                 <span>{student.name}</span>
                                 <span className="text-muted-foreground">
@@ -1193,7 +1347,9 @@ const StudentRecord: React.FC = () => {
                           <TableCell>
                             <Badge
                               className={`${
-                                student.status === "Signed"
+                                student.status === "Cleared"
+                                  ? "bg-blue-100 border border-blue-300 text-blue-600"
+                                  : student.status === "Signed"
                                   ? "bg-green-100 border border-green-300 text-green-600"
                                   : student.status === "Incomplete"
                                   ? "bg-yellow-100 border border-yellow-300 text-yellow-600"
@@ -1205,24 +1361,47 @@ const StudentRecord: React.FC = () => {
                           </TableCell>
                           <TableCell className="">
                             <div className="flex items-center gap-2">
-                              <Button
-                                className="w-20"
-                                variant={
-                                  student.status === "Signed"
-                                    ? "destructive"
-                                    : "default"
-                                }
-                                size="sm"
-                                onClick={() => handleSignToggle(student.id)}
-                              >
-                                {student.status === "Signed" ? (
-                                  <Undo className="w-4 h-4" />
-                                ) : (
-                                  <CheckCircle className="w-4 h-4" />
+                              {/* Revoke button - only visible for cashier role and students with Cleared status */}
+                              {role === "cashier" &&
+                                student.status === "Cleared" && (
+                                  <Button
+                                    className="w-20"
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleRevokePermit(student.id)
+                                    }
+                                  >
+                                    <XCircle className="w-4 h-4" />
+                                    Revoke
+                                  </Button>
                                 )}
-                                {student.status === "Signed" ? "Undo" : "Sign"}
-                              </Button>
-                              <Link to="/clearing-officer/viewClearance">
+
+                              {/* Hide Sign/Undo button if student has Cleared status */}
+                              {student.status !== "Cleared" && (
+                                <Button
+                                  className="w-20"
+                                  variant={
+                                    student.status === "Signed"
+                                      ? "destructive"
+                                      : "default"
+                                  }
+                                  size="sm"
+                                  onClick={() => handleSignToggle(student.id)}
+                                >
+                                  {student.status === "Signed" ? (
+                                    <Undo className="w-4 h-4" />
+                                  ) : (
+                                    <CheckCircle className="w-4 h-4" />
+                                  )}
+                                  {student.status === "Signed"
+                                    ? "Undo"
+                                    : "Sign"}
+                                </Button>
+                              )}
+                              <Link
+                                to={`/clearing-officer/viewClearance?schoolId=${student.schoolId}`}
+                              >
                                 <Button
                                   className="bg-yellow-500 hover:bg-yellow-400 w-20"
                                   size="sm"

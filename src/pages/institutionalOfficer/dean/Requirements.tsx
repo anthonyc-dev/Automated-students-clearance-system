@@ -23,8 +23,6 @@ import {
 } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import {
-  createInstitutionalRequirement,
-  getAllInstitutionalRequirements,
   updateInstitutionalRequirement,
   deleteInstitutionalRequirement,
 } from "@/services/institutionalRequirementsService";
@@ -35,25 +33,26 @@ import {
 } from "@/services/clearanceService";
 import { Building } from "lucide-react";
 import axiosInstance, { API_URL } from "@/api/axios";
-import { createBulkStudentRequirementsIns } from "@/services/studentReqInstitutionalService";
 import {
   fetchClearingOfficerDashboardStats,
   type ClearingOfficerDashboardStats,
 } from "@/services/clearingOfficerDashboardService";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
-import { sendBulkSms } from "@/services/sendSms";
 
 interface Requirement {
-  _id?: string;
-  id?: string;
-  institutionalName: string;
-  requirements: string[];
-  description: string;
-  deadline: Date | string;
-  department: string;
+  id: string;
+  userId: string;
+  courseCode: string;
+  courseName: string;
+  yearLevel: string;
   semester: string;
-  postedBy: string;
+  requirements?: string[];
+  department: string;
+  dueDate: Date | string | null;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const departments = [
@@ -83,9 +82,9 @@ const semesters = ["1st Semester", "2nd Semester"];
 const ellipsize = (text: string, limit = 120) =>
   text && text.length > limit ? `${text.slice(0, limit)}…` : text;
 
-const Requirements = () => {
+const DeanRequirements = () => {
   const navigate = useNavigate();
-  const { user, role } = useAuth();
+  const { user } = useAuth();
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -154,18 +153,13 @@ const Requirements = () => {
     loadDashboardData();
   }, []);
 
-  // Calculate derived metrics
-  // const daysUntilDeadline = stats
-  //   ? getDaysUntilDeadline(stats.activeClearance)
-  //   : 0;
-
   // Get and format deadline date
   const deadlineDate = stats?.activeClearance
     ? stats.activeClearance.extendedDeadline || stats.activeClearance.deadline
     : null;
 
   const formattedDeadlineDate = deadlineDate
-    ? new Date(deadlineDate).toLocaleDateString("en-US", {
+    ? new Date(deadlineDate).toLocaleDateString("en-PH", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -193,52 +187,41 @@ const Requirements = () => {
   }, []);
 
   const fetchRequirements = useCallback(async () => {
+    if (!user?.id) {
+      console.error("No user ID found");
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await getAllInstitutionalRequirements();
+      const response = await axiosInstance.get(
+        `/req/getByUserIdReq/${user.id}`
+      );
       console.log("Full response:", response);
 
       // Handle different response structures
-      let requirementsData = [];
+      let requirementsData: Requirement[] = [];
 
-      if (Array.isArray(response)) {
-        requirementsData = response;
-      } else if (response.data && Array.isArray(response.data)) {
+      if (Array.isArray(response.data)) {
+        // If response.data is already an array
         requirementsData = response.data;
       } else if (
-        response.requirements &&
-        Array.isArray(response.requirements)
+        response.data &&
+        typeof response.data === "object" &&
+        response.data.id
       ) {
-        requirementsData = response.requirements;
+        // If response.data is a single requirement object
+        requirementsData = [response.data];
+      } else if (response.data && Array.isArray(response.data.data)) {
+        // If requirements are nested in data.data
+        requirementsData = response.data.data;
+      } else if (response.data && Array.isArray(response.data.requirements)) {
+        // If requirements are nested in data.requirements
+        requirementsData = response.data.requirements;
       }
 
       console.log("Requirements data:", requirementsData);
-
-      // Map API response to local state format
-      const mappedRequirements = requirementsData.map(
-        (req: Record<string, unknown>) => ({
-          id: req.id as string,
-          institutionalName: req.institutionalName as string,
-          requirements: req.requirements as string[],
-          description: req.description as string,
-          deadline: req.deadline as string,
-          department: req.department as string,
-          semester: req.semester as string,
-          postedBy: req.postedBy as string,
-        })
-      );
-
-      // Filter requirements to only show those posted by the current user
-      const filteredRequirements = mappedRequirements.filter(
-        (req: Requirement) => req.postedBy === user?.id
-      );
-
-      console.log("Mapped requirements:", mappedRequirements);
-      console.log(
-        "Filtered requirements (posted by current user):",
-        filteredRequirements
-      );
-      setRequirements(filteredRequirements);
+      setRequirements(requirementsData);
     } catch (error) {
       console.error("Error fetching requirements:", error);
       message.error("Failed to load requirements.");
@@ -270,10 +253,16 @@ const Requirements = () => {
     }
 
     setAddLoading(true);
+
+    message.loading("Creating requirement and assigning to students...", 0);
+
     try {
-      // Call API to create institutional requirement
+      // Call API to create institutional requirement using Dean's endpoint
+      // The backend will automatically create student requirements for enrolled students
       const payload = {
-        institutionalName: newRequirement.courseCode.trim(),
+        courseCode: newRequirement.courseCode.trim(),
+        courseName: newRequirement.courseCode.trim(),
+        yearLevel: "All Year Levels", // Dean requirements apply to all year levels
         requirements: normalizedNames,
         department: newRequirement.department,
         description: newRequirement.description || "",
@@ -281,49 +270,65 @@ const Requirements = () => {
         postedBy: user.id,
       };
 
-      const response = await createInstitutionalRequirement(payload);
+      console.log("📤 Sending requirement creation payload:", payload);
 
-      // Extract the requirement ID from the response (handle various response structures)
-      const requirementId =
-        response?.data?.id ||
-        response?.data?._id ||
-        response?.id ||
-        response?._id ||
-        (typeof response === "object" && response !== null && "id" in response
-          ? (response as { id: string }).id
-          : null) ||
-        (typeof response === "object" && response !== null && "_id" in response
-          ? (response as { _id: string })._id
-          : null);
+      const response = await axiosInstance.post("/req/createReq", payload);
 
-      if (!requirementId) {
-        console.error("Failed to get requirement ID from response:", response);
-        message.error("Requirement created but failed to get requirement ID.");
-        await fetchRequirements();
-        return;
+      console.log("📥 Backend response:", response.data);
+
+      message.destroy();
+
+      // Backend automatically creates student requirements and returns info
+      const {
+        requirement,
+        assignedCount,
+        message: backendMessage,
+        warning,
+        smsNotification,
+      } = response.data;
+
+      // Display success message with details
+      if (assignedCount > 0) {
+        let successMsg = `Requirement created successfully! Assigned to ${assignedCount} student(s).`;
+
+        // Add SMS notification info if available
+        if (smsNotification && smsNotification.sent > 0) {
+          successMsg += ` SMS sent to ${smsNotification.sent}/${smsNotification.total} student(s).`;
+        }
+
+        message.success(successMsg, 5);
+      } else if (warning) {
+        message.warning(warning, 5);
+      } else if (backendMessage) {
+        message.info(backendMessage, 5);
+      } else {
+        message.success("Requirement created successfully!", 3);
       }
 
-      console.log(
-        "✅ Institutional requirement created with ID:",
-        requirementId
-      );
+      console.log("✅ Requirement created:", {
+        requirementId: requirement?.id,
+        assignedCount,
+        smsNotification,
+      });
 
-      // Fetch all enrolled students
-      message.loading(
-        "Creating student requirements for all enrolled students...",
-        0
-      );
-
+      // Additionally, manually create student requirements for all students in the department
+      // This ensures dean requirements are assigned to ALL students in the department
       try {
-        const studentsResponse = await axiosInstance.get(
-          `${API_URL}/intigration/getAllStudentComparedByIds`
+        console.log(
+          "📋 [Dean] Fetching all students from department:",
+          newRequirement.department
         );
 
-        // Handle different response structures
+        const studentsResponse = await axiosInstance.get(
+          `${API_URL}/intigration/getAllStudentsByDepartment/${encodeURIComponent(
+            newRequirement.department
+          )}`
+        );
+
         let studentsData: Array<{
           id: string;
           schoolId: string;
-          phone: string;
+          phone?: string;
         }> = [];
 
         if (Array.isArray(studentsResponse.data)) {
@@ -340,100 +345,52 @@ const Requirements = () => {
           studentsData = studentsResponse.data.students;
         }
 
-        console.log(`📚 Found ${studentsData.length} enrolled students`);
+        console.log(
+          `📚 [Dean] Found ${studentsData.length} students in department`
+        );
 
-        console.log("student req", studentsData);
-
-        if (studentsData.length > 0) {
-          // Create student requirements for all students
+        if (studentsData.length > 0 && requirement?.id) {
           const studentRequirements = studentsData.map((student) => ({
             studentId: student.schoolId,
             coId: user.id,
-            requirementId: requirementId,
-            signedBy: user.role || "sao",
+            requirementId: requirement.id,
+            signedBy: user.role || "dean",
             status: "incomplete" as const,
           }));
 
-          console.log("Reqqqqqqq", studentRequirements);
+          console.log(
+            `📝 [Dean] Creating ${studentRequirements.length} student requirements...`
+          );
+
+          await axiosInstance.post(
+            "/studentReq/studentRequirement",
+            studentRequirements
+          );
 
           console.log(
-            `📝 Creating ${studentRequirements.length} student requirements...`
-          );
-
-          // Check if user role is dean and use different endpoint
-          if (role === "dean") {
-            // Use the dean-specific endpoint
-            const createdRequirements = await axiosInstance.post(
-              `${API_URL}/studentReq/studentRequirement`,
-              studentRequirements
-            );
-
-            message.destroy();
-
-            if (
-              createdRequirements.data &&
-              Array.isArray(createdRequirements.data) &&
-              createdRequirements.data.length > 0
-            ) {
-              message.success(
-                `Requirement created successfully! Student requirements created for ${createdRequirements.data.length} students.`
-              );
-            } else if (createdRequirements.data) {
-              message.success(
-                "Requirement created successfully! Student requirements created."
-              );
-            } else {
-              message.warning(
-                "Requirement created, but failed to create student requirements."
-              );
-            }
-          } else {
-            // Use the regular endpoint for non-dean roles
-            const createdRequirements = await createBulkStudentRequirementsIns(
-              studentRequirements
-            );
-
-            message.destroy();
-
-            if (createdRequirements.length > 0) {
-              message.success(
-                `Requirement created successfully! Student requirements created for ${createdRequirements.length} students.`
-              );
-            } else {
-              message.warning(
-                "Requirement created, but failed to create student requirements."
-              );
-            }
-          }
-
-          //notification
-          await addDoc(collection(db, "notifications"), {
-            userId: user?.id,
-            title: "Requirement Created",
-            message: `A new requirement for ${newRequirement?.courseCode} has been added.`,
-            isRead: false,
-            createdAt: serverTimestamp(),
-          });
-
-          const phoneNumbers = studentsData.map((student) => student.phone);
-
-          //sms
-          await sendBulkSms(
-            phoneNumbers,
-            `The ${role} Clearing Officer has posted new institutional requirements for your clearance. Please log in to your student portal to review and complete them as soon as possible.`
-          );
-        } else {
-          message.destroy();
-          message.success(
-            "Requirement created successfully! No enrolled students found."
+            `✅ [Dean] Successfully created student requirements for all department students`
           );
         }
-      } catch (studentReqError) {
-        message.destroy();
-        console.error("Error creating student requirements:", studentReqError);
-        message.warning(
-          "Requirement created successfully, but failed to create student requirements for all students."
+      } catch (deptError) {
+        console.error(
+          "⚠️ [Dean] Failed to create department-wide student requirements:",
+          deptError
         );
+        // Don't fail the entire operation if this additional step fails
+      }
+
+      // Create Firebase notification for the dean
+      try {
+        await addDoc(collection(db, "notifications"), {
+          userId: user?.id,
+          title: "Requirement Created",
+          message: `A new requirement for ${newRequirement?.courseCode} has been added and assigned to students in ${newRequirement.department}.`,
+          isRead: false,
+          createdAt: serverTimestamp(),
+        });
+      } catch (notifError) {
+        console.error("⚠️ Failed to create notification:", notifError);
+        // Don't fail the entire operation if notification fails
       }
 
       // Refresh the requirements list
@@ -458,10 +415,10 @@ const Requirements = () => {
     }
   };
 
-  const handleDeleteRequirement = (id: string, institutionalName: string) => {
+  const handleDeleteRequirement = (id: string, courseName: string) => {
     Modal.confirm({
       title: "Delete Requirement",
-      content: `Are you sure you want to delete "${institutionalName}"? This action cannot be undone.`,
+      content: `Are you sure you want to delete "${courseName}"? This action cannot be undone.`,
       okText: "Delete",
       okType: "danger",
       cancelText: "Cancel",
@@ -493,10 +450,10 @@ const Requirements = () => {
   const openEditModal = (record: Requirement) => {
     setEditItem(record);
     setEditForm({
-      courseCode: record.institutionalName,
+      courseCode: record.courseCode,
       department: record.department,
       semester: record.semester,
-      names: [...record.requirements],
+      names: record.requirements ? [...record.requirements] : [],
       description: record.description,
     });
     setIsEditModalOpen(true);
@@ -521,7 +478,9 @@ const Requirements = () => {
     setUpdateLoading(true);
     try {
       const payload = {
-        institutionalName: editForm.courseCode.trim(),
+        courseCode: editForm.courseCode.trim(),
+        courseName: editForm.courseCode.trim(),
+        yearLevel: "All Year Levels",
         requirements: editForm.names.map((n) => n.trim()).filter((n) => n),
         department: editForm.department,
         semester: editForm.semester,
@@ -568,26 +527,6 @@ const Requirements = () => {
 
       return now > deadlineDate;
     })();
-
-  // Get effective deadline (use extended deadline if available)
-  // const effectiveDeadline =
-  //   clearanceStatus?.extendedDeadline || clearanceStatus?.deadline;
-
-  // // Function to disable dates outside clearance period
-  // const disabledDate = (current: Dayjs) => {
-  //   if (!clearanceStatus || !clearanceStatus.isActive) {
-  //     // Disable all dates if clearance is not active
-  //     return true;
-  //   }
-
-  //   const startDate = dayjs(clearanceStatus.startDate);
-  //   const endDate = dayjs(effectiveDeadline);
-
-  //   // Disable dates before start date or after deadline
-  //   return (
-  //     current.isBefore(startDate, "day") || current.isAfter(endDate, "day")
-  //   );
-  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6">
@@ -706,7 +645,7 @@ const Requirements = () => {
                       </div>
                       <div>
                         <h2 className="text-2xl font-bold text-white mb-1">
-                          {requirement.institutionalName}
+                          {requirement.courseName}
                         </h2>
                         <div className="flex items-center gap-2">
                           <Tag
@@ -725,7 +664,9 @@ const Requirements = () => {
                           icon={<TeamOutlined />}
                           onClick={() =>
                             navigate(
-                              `/clearing-officer/sao/students/${requirement.id}`
+                              `/clearing-officer/dean/students/${
+                                requirement.id
+                              }/${encodeURIComponent(requirement.department)}`
                             )
                           }
                           disabled={isClearanceInactive}
@@ -773,7 +714,7 @@ const Requirements = () => {
                             requirement.id &&
                             handleDeleteRequirement(
                               requirement.id,
-                              requirement.institutionalName
+                              requirement.courseName
                             )
                           }
                           disabled={isClearanceInactive}
@@ -808,44 +749,53 @@ const Requirements = () => {
                           Requirements List
                         </label>
                         <div className="flex flex-wrap gap-2">
-                          {requirement.requirements
-                            .slice(0, MAX_VISIBLE_TAGS)
-                            .map((req, idx) => (
-                              <Tag
-                                key={idx}
-                                color="blue"
-                                className="text-sm font-medium px-3 py-1.5 rounded-lg"
-                              >
-                                {req}
-                              </Tag>
-                            ))}
-                          {requirement.requirements.length >
-                            MAX_VISIBLE_TAGS && (
-                            <Dropdown
-                              menu={{
-                                items: requirement.requirements
-                                  .slice(MAX_VISIBLE_TAGS)
-                                  .map((req, idx) => ({
-                                    key: `${idx}`,
-                                    label: (
-                                      <Tag color="blue" className="mr-2">
-                                        {req}
-                                      </Tag>
-                                    ),
-                                  })),
-                              }}
-                              trigger={["click"]}
-                            >
-                              <Tag
-                                color="blue"
-                                className="cursor-pointer text-sm font-medium px-3 py-1.5"
-                              >
-                                +
-                                {requirement.requirements.length -
-                                  MAX_VISIBLE_TAGS}{" "}
-                                more
-                              </Tag>
-                            </Dropdown>
+                          {requirement.requirements &&
+                          requirement.requirements.length > 0 ? (
+                            <>
+                              {requirement.requirements
+                                .slice(0, MAX_VISIBLE_TAGS)
+                                .map((req, idx) => (
+                                  <Tag
+                                    key={idx}
+                                    color="blue"
+                                    className="text-sm font-medium px-3 py-1.5 rounded-lg"
+                                  >
+                                    {req}
+                                  </Tag>
+                                ))}
+                              {requirement.requirements.length >
+                                MAX_VISIBLE_TAGS && (
+                                <Dropdown
+                                  menu={{
+                                    items: requirement.requirements
+                                      .slice(MAX_VISIBLE_TAGS)
+                                      .map((req, idx) => ({
+                                        key: `${idx}`,
+                                        label: (
+                                          <Tag color="blue" className="mr-2">
+                                            {req}
+                                          </Tag>
+                                        ),
+                                      })),
+                                  }}
+                                  trigger={["click"]}
+                                >
+                                  <Tag
+                                    color="blue"
+                                    className="cursor-pointer text-sm font-medium px-3 py-1.5"
+                                  >
+                                    +
+                                    {requirement.requirements.length -
+                                      MAX_VISIBLE_TAGS}{" "}
+                                    more
+                                  </Tag>
+                                </Dropdown>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-gray-400 dark:text-gray-500 italic text-sm">
+                              No requirements specified
+                            </p>
                           )}
                         </div>
                       </div>
@@ -931,7 +881,7 @@ const Requirements = () => {
         <Space direction="vertical" className="w-full" size="large">
           <div>
             <label className="block mb-2 font-semibold text-gray-700 dark:text-gray-300">
-              Institutional name
+              Course Name
             </label>
             <Input
               value={newRequirement.courseCode}
@@ -941,7 +891,7 @@ const Requirements = () => {
                   courseCode: e.target.value,
                 })
               }
-              placeholder="Enter Institutional name"
+              placeholder="Enter course name"
               size="large"
             />
           </div>
@@ -1018,38 +968,6 @@ const Requirements = () => {
               placeholder="Enter requirement description"
             />
           </div>
-
-          {/* <div>
-            <label className="block mb-2 font-semibold text-gray-700 dark:text-gray-300">
-              Deadline
-            </label>
-            <DatePicker
-              className="w-full"
-              onChange={(date) =>
-                setNewRequirement({
-                  ...newRequirement,
-                  deadline: date?.toDate(),
-                })
-              }
-              disabledDate={disabledDate}
-              disabled={isClearanceInactive}
-              placeholder={
-                isClearanceInactive
-                  ? "Clearance period not active"
-                  : "Select deadline"
-              }
-              size="large"
-            />
-            {clearanceStatus?.isActive && (
-              <div className="mt-2 text-xs text-gray-500">
-                Date must be between{" "}
-                {dayjs(clearanceStatus.startDate).format("MMM D, YYYY")} and{" "}
-                {dayjs(
-                  clearanceStatus.extendedDeadline || clearanceStatus.deadline
-                ).format("MMM D, YYYY")}
-              </div>
-            )}
-          </div> */}
         </Space>
       </Modal>
 
@@ -1081,14 +999,14 @@ const Requirements = () => {
           <div className="space-y-4">
             <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg">
               <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-2">
-                Institutional Name
+                Course Name
               </label>
               <p className="text-xl font-bold text-gray-800 dark:text-white">
-                {viewItem.institutionalName}
+                {viewItem.courseName}
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
               <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-2">
                   Department
@@ -1109,23 +1027,38 @@ const Requirements = () => {
                   {viewItem.semester}
                 </Tag>
               </div>
+
+              <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-2">
+                  Year Level
+                </label>
+                <Tag color="purple" className="text-sm font-medium px-3 py-1">
+                  {viewItem.yearLevel}
+                </Tag>
+              </div>
             </div>
 
             <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-3">
                 Requirements List
               </label>
-              <Space size={[8, 8]} wrap>
-                {viewItem.requirements.map((n, i) => (
-                  <Tag
-                    key={i}
-                    color="blue"
-                    className="text-sm font-medium px-3 py-1.5"
-                  >
-                    {n}
-                  </Tag>
-                ))}
-              </Space>
+              {viewItem.requirements && viewItem.requirements.length > 0 ? (
+                <Space size={[8, 8]} wrap>
+                  {viewItem.requirements.map((n, i) => (
+                    <Tag
+                      key={i}
+                      color="blue"
+                      className="text-sm font-medium px-3 py-1.5"
+                    >
+                      {n}
+                    </Tag>
+                  ))}
+                </Space>
+              ) : (
+                <p className="text-gray-400 dark:text-gray-500 italic">
+                  No requirements specified
+                </p>
+              )}
             </div>
 
             <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
@@ -1140,20 +1073,6 @@ const Requirements = () => {
                 )}
               </p>
             </div>
-
-            {/* <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide block mb-2">
-                Deadline
-              </label>
-              <p className="text-base font-semibold text-gray-800 dark:text-white">
-                {format(
-                  typeof viewItem.deadline === "string"
-                    ? new Date(viewItem.deadline)
-                    : viewItem.deadline,
-                  "MMMM dd, yyyy"
-                )}
-              </p>
-            </div> */}
           </div>
         )}
       </Modal>
@@ -1181,14 +1100,14 @@ const Requirements = () => {
         <Space direction="vertical" className="w-full" size="large">
           <div>
             <label className="block mb-2 font-semibold text-gray-700 dark:text-gray-300">
-              Institutional name
+              Course Name
             </label>
             <Input
               value={editForm.courseCode}
               onChange={(e) =>
                 setEditForm((prev) => ({ ...prev, courseCode: e.target.value }))
               }
-              placeholder="Enter Institutional name"
+              placeholder="Enter course name"
               size="large"
             />
           </div>
@@ -1264,43 +1183,10 @@ const Requirements = () => {
               placeholder="Enter requirement description"
             />
           </div>
-
-          {/* <div>
-            <label className="block mb-2 font-semibold text-gray-700 dark:text-gray-300">
-              Deadline
-            </label>
-            <DatePicker
-              className="w-full"
-              value={editForm.deadline ? dayjs(editForm.deadline) : undefined}
-              onChange={(date: Dayjs | null) =>
-                setEditForm((prev) => ({
-                  ...prev,
-                  deadline: date ? date.toDate() : undefined,
-                }))
-              }
-              disabledDate={disabledDate}
-              disabled={isClearanceInactive}
-              placeholder={
-                isClearanceInactive
-                  ? "Clearance period not active"
-                  : "Select deadline"
-              }
-              size="large"
-            />
-            {clearanceStatus?.isActive && (
-              <div className="mt-2 text-xs text-gray-500">
-                Date must be between{" "}
-                {dayjs(clearanceStatus.startDate).format("MMM D, YYYY")} and{" "}
-                {dayjs(
-                  clearanceStatus.extendedDeadline || clearanceStatus.deadline
-                ).format("MMM D, YYYY")}
-              </div>
-            )}
-          </div> */}
         </Space>
       </Modal>
     </div>
   );
 };
 
-export default Requirements;
+export default DeanRequirements;

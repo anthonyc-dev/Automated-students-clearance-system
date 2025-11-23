@@ -40,6 +40,11 @@ const navbar = [
     label: "Requirements",
   },
   {
+    to: "/clearing-officer/dean/requirements",
+    icon: FileText,
+    label: "Requirements",
+  },
+  {
     to: "/clearing-officer/events",
     icon: Calendar,
     label: "Events",
@@ -178,7 +183,22 @@ export function AppSidebar({ closeSidebar }: CloseSidebarProps) {
               (item.to === "/clearing-officer/sao/students" ||
                 item.to === "/clearing-officer/sao/requirements");
 
-            if (shouldHideForSao || shouldHideForNonSao) {
+            // Show `/dean/requirements` only for "dean" role, hide for all others
+            const shouldHideDeanRequirements =
+              item.to === "/clearing-officer/dean/requirements" &&
+              user?.role !== "dean";
+
+            // Hide `/clearing-officer/sao/requirements` for dean role (they should use /dean/requirements instead)
+            const shouldHideSaoRequirementsForDean =
+              item.to === "/clearing-officer/sao/requirements" &&
+              user?.role === "dean";
+
+            if (
+              shouldHideForSao ||
+              shouldHideForNonSao ||
+              shouldHideDeanRequirements ||
+              shouldHideSaoRequirementsForDean
+            ) {
               return null;
             }
 

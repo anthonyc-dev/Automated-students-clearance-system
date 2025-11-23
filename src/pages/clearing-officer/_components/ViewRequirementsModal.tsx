@@ -1,12 +1,11 @@
 import { Modal, Descriptions, Tag, Divider, List, Badge, Grid } from "antd";
 import {
   BookOutlined,
-  CalendarOutlined,
   TeamOutlined,
   FileTextOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
-import { format } from "date-fns";
+
 import type { RequirementData } from "./RequirementsTable";
 
 const { useBreakpoint } = Grid;
@@ -25,11 +24,11 @@ const ViewRequirementsModal: React.FC<ViewRequirementsModalProps> = ({
   const screens = useBreakpoint();
   if (!requirement) return null;
 
-  const isOverdue = new Date(requirement.dueDate) < new Date();
-  const formattedDueDate = format(
-    new Date(requirement.dueDate),
-    "MMMM dd, yyyy"
-  );
+  // const isOverdue = new Date(requirement.dueDate) < new Date();
+  // const formattedDueDate = format(
+  //   new Date(requirement.dueDate),
+  //   "MMMM dd, yyyy"
+  // );
 
   return (
     <Modal
@@ -131,19 +130,6 @@ const ViewRequirementsModal: React.FC<ViewRequirementsModalProps> = ({
             Status & Metrics
           </Divider>
           <Descriptions bordered size="small" column={screens.xs ? 1 : 2}>
-            <Descriptions.Item
-              label={
-                <span>
-                  <CalendarOutlined className="mr-2" />
-                  Due Date
-                </span>
-              }
-            >
-              <Tag color={isOverdue ? "red" : "green"}>
-                {formattedDueDate}
-                {isOverdue && " (Overdue)"}
-              </Tag>
-            </Descriptions.Item>
             <Descriptions.Item
               label={
                 <span>

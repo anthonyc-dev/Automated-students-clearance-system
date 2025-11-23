@@ -67,7 +67,7 @@ class TokenService {
     try {
       console.log("🔄 Attempting token refresh...");
       const res = await axiosInstance.post(
-        "/auth/refresh-token",
+        `/auth/refresh-token`,
         {},
         { withCredentials: true }
       );

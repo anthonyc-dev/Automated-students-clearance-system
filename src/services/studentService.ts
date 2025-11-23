@@ -105,6 +105,30 @@ export const getStudentById = async (id: string): Promise<Student> => {
 };
 
 /**
+ * Fetch a single student by schoolId
+ * @param schoolId - The student's school ID
+ * @returns The student data
+ */
+export const getStudentBySchoolId = async (
+  schoolId: string
+): Promise<Student> => {
+  try {
+    console.log("📤 Fetching student by schoolId:", schoolId);
+    const response = await axiosInstance.get(
+      `/student/getBySchoolId/${schoolId}`
+    );
+    console.log("✅ Student fetched successfully:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      `❌ Error fetching student with schoolId ${schoolId}:`,
+      error
+    );
+    throw error;
+  }
+};
+
+/**
  * Create a new student
  * @param data - The student data including password
  * @returns The newly created student

@@ -30,6 +30,8 @@ import { SaoOfficer } from "@/pages/institutionalOfficer/sao/studentsList";
 import Requirements from "@/pages/institutionalOfficer/sao/Requirements";
 import { ClearanceStart } from "@/pages/admin-side/ClearanceStart";
 import TermsPolicy from "@/pages/landingPage/_components/TermsPolicy";
+import DeanRequirements from "@/pages/institutionalOfficer/dean/Requirements";
+import DeanStudentList from "@/pages/institutionalOfficer/dean/StudnetList";
 
 const AppRoutes: React.FC = () => {
   return (
@@ -82,7 +84,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="clearance"
           element={
-            <ProtectedRoute allowedRoles={["clearingOfficer"]}>
+            <ProtectedRoute allowedRoles={["clearingOfficer", "dean"]}>
               <Clearance />
             </ProtectedRoute>
           }
@@ -139,10 +141,26 @@ const AppRoutes: React.FC = () => {
                 "library",
                 "tailoring",
                 "guidance",
-                "dean",
               ]}
             >
               <SaoOfficer />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="dean/requirements"
+          element={
+            <ProtectedRoute allowedRoles={["dean"]}>
+              <DeanRequirements />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="dean/students/:reqId/:departmentParams"
+          element={
+            <ProtectedRoute allowedRoles={["dean"]}>
+              <DeanStudentList />
             </ProtectedRoute>
           }
         />

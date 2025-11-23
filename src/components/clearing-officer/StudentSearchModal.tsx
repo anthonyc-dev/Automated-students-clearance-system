@@ -87,7 +87,7 @@ export function StudentSearchModal({
   const handleStudentClick = (student: Student) => {
     // Navigate to student details or clearance page
     // Adjust the route based on your application structure
-    navigate(`/clearing-officer/clearance?studentId=${student._id}`);
+    navigate(`/clearing-officer/viewClearance?schoolId=${student.schoolId}`);
     onOpenChange(false);
   };
 

@@ -9,6 +9,7 @@ export interface User {
   profileImage?: string;
   profile?: string;
   role: string;
+  department?: string;
   createdAt?: string;
   updatedAt?: string;
 }

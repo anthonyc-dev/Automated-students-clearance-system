@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import axiosInstance, { API_URL } from "@/api/axios";
 import { useAuth } from "@/authentication/useAuth";
-import { type StudentRequirement } from "@/services/studentReqInstitutionalService";
+import { type StudentRequirement } from "@/services/studentRequirementService";
 import { message, Modal } from "antd";
 import {
   Table,
@@ -72,13 +72,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  createBulkStudentRequirementsIns,
-  createStudentRequirementIns,
-  findExistingStudentRequirementIns,
-  getAllStudentRequirementsIns,
-  updateStudentRequirementIns,
-  bulkUpdateToMissingStatusIns,
-} from "@/services/studentReqInstitutionalService";
+  createStudentRequirement,
+  findExistingStudentRequirementByRole,
+  getAllStudentRequirements,
+  updateStudentRequirement,
+  bulkUpdateToMissingStatus,
+} from "@/services/studentRequirementService";
 import {
   getCurrentClearance,
   type ClearanceStatus,
@@ -94,6 +93,7 @@ import {
   checkStudentPermit,
   revokeStudentPermit,
 } from "@/services/permitService";
+import { createBulkStudentRequirements } from "@/services/studentRequirementService";
 
 // API response interface matching the backend data structure
 interface ApiStudent {
@@ -121,8 +121,11 @@ export interface Student {
   studentRequirementId?: string;
 }
 
-export const SaoOfficer = () => {
-  const { reqId } = useParams<{ reqId: string }>();
+export const DeanStudentList = () => {
+  const { reqId, departmentParams } = useParams<{
+    reqId: string;
+    departmentParams: string;
+  }>();
   const { user, role } = useAuth();
 
   const [students, setStudents] = useState<Student[]>([]);
@@ -164,17 +167,14 @@ export const SaoOfficer = () => {
       setClearanceLoading(true);
       try {
         const status = await getCurrentClearance();
-        console.log("✅ [Institutional] Clearance status:", status);
+        console.log("✅ [Dean] Clearance status:", status);
         setClearanceStatus(status);
 
         // Log and display deadline status information
         logDeadlineStatus(status);
         notifyDeadlineStatus(status);
       } catch (error) {
-        console.error(
-          "❌ [Institutional] Error fetching clearance status:",
-          error
-        );
+        console.error("❌ [Dean] Error fetching clearance status:", error);
         setClearanceStatus(null);
       } finally {
         setClearanceLoading(false);
@@ -184,64 +184,52 @@ export const SaoOfficer = () => {
     fetchClearanceStatus();
   }, []);
 
-  // Automatic deadline check and missing status update for institutional requirements
-  // This effect runs when clearance status and student requirements are loaded
+  // Automatic deadline check and missing status update for dean requirements
   useEffect(() => {
     const handleAutomaticMissingStatusUpdate = async () => {
-      // Early exit if data is still loading
       if (isLoading || clearanceLoading) {
         return;
       }
 
-      // Check if we should proceed with automatic update
       if (!shouldAutoUpdateToMissing(clearanceStatus)) {
-        console.log(
-          "⏭️ [Institutional] Skipping automatic missing status update"
-        );
+        console.log("⏭️ [Dean] Skipping automatic missing status update");
         return;
       }
 
       console.log(
-        "🔄 [Institutional] Deadline has passed - initiating automatic missing status update"
+        "🔄 [Dean] Deadline has passed - initiating automatic missing status update"
       );
 
       try {
-        // Use the already-loaded allStudentRequirements state
         if (allStudentRequirements.length === 0) {
-          console.log(
-            "ℹ️ [Institutional] No student requirements found to update"
-          );
+          console.log("ℹ️ [Dean] No student requirements found to update");
           return;
         }
 
-        // Filter to only requirements for the current reqId if provided
         const relevantStudentReqs = reqId
           ? allStudentRequirements.filter((req) => req.requirementId === reqId)
           : allStudentRequirements;
 
         if (relevantStudentReqs.length === 0) {
           console.log(
-            "ℹ️ [Institutional] No student requirements match the current requirement"
+            "ℹ️ [Dean] No student requirements match the current requirement"
           );
           return;
         }
 
         console.log(
-          `📊 [Institutional] Found ${relevantStudentReqs.length} student requirement(s) to check for automatic missing status`
+          `📊 [Dean] Found ${relevantStudentReqs.length} student requirement(s) to check for automatic missing status`
         );
 
-        // Perform bulk update to missing status
-        const result = await bulkUpdateToMissingStatusIns(relevantStudentReqs);
+        const result = await bulkUpdateToMissingStatus(relevantStudentReqs);
 
         if (result.updated > 0) {
           console.log(
-            `✅ [Institutional] Successfully updated ${result.updated} student requirements to missing status`
+            `✅ [Dean] Successfully updated ${result.updated} student requirements to missing status`
           );
 
-          // Update local state to reflect the changes
           setStudents((prev) =>
             prev.map((student) => {
-              // Check if this student's requirement was updated
               const wasUpdated = relevantStudentReqs.some(
                 (req) =>
                   req.studentId === student.schoolId && req.status !== "missing"
@@ -253,7 +241,6 @@ export const SaoOfficer = () => {
             })
           );
 
-          // Also update the allStudentRequirements state
           setAllStudentRequirements((prev) =>
             prev.map((req) => {
               const wasUpdated = relevantStudentReqs.some(
@@ -270,10 +257,9 @@ export const SaoOfficer = () => {
         }
       } catch (error) {
         console.error(
-          "❌ [Institutional] Error during automatic missing status update:",
+          "❌ [Dean] Error during automatic missing status update:",
           error
         );
-        // Fail silently - don't interrupt user experience
       }
     };
 
@@ -286,17 +272,32 @@ export const SaoOfficer = () => {
     reqId,
   ]);
 
-  // Fetch students data from API
+  // Fetch students data from API - using department-specific endpoint
   useEffect(() => {
     const fetchStudents = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await axiosInstance.get(
-          `${API_URL}/intigration/getAllStudentComparedByIds`
+
+        // Get department from URL params
+        if (!departmentParams) {
+          setError("Department parameter not found in URL");
+          setIsLoading(false);
+          return;
+        }
+
+        console.log(
+          `🏫 [Dean] Fetching students for department: ${departmentParams}`
         );
 
-        console.log("API Response:", response.data); // Debug log
+        const apiUrl = `${API_URL}/intigration/getAllStudentsByDepartment/${encodeURIComponent(
+          departmentParams
+        )}`;
+        console.log(`🔗 [Dean] API URL: ${apiUrl}`);
+
+        const response = await axiosInstance.get(apiUrl);
+
+        console.log("📥 [Dean] API Response:", response.data);
 
         // Handle different response structures
         let studentsData: ApiStudent[] = [];
@@ -312,6 +313,10 @@ export const SaoOfficer = () => {
             "Invalid response format: expected an array of students"
           );
         }
+
+        console.log(
+          `✅ [Dean] Found ${studentsData.length} students in ${departmentParams}`
+        );
 
         // Transform API data to match Student interface with default status
         const transformedStudents: Student[] = studentsData.map(
@@ -331,14 +336,13 @@ export const SaoOfficer = () => {
         // Fetch all student requirements to check for existing signed students
         try {
           console.log(
-            "🔍 Fetching student requirements to check for signed students..."
+            "🔍 [Dean] Fetching student requirements to check for signed students..."
           );
-          const allRequirements = await getAllStudentRequirementsIns();
+          const allRequirements = await getAllStudentRequirements();
           console.log(
-            `✅ Fetched ${allRequirements.length} student requirements`
+            `✅ [Dean] Fetched ${allRequirements.length} student requirements`
           );
 
-          // Store all requirements in state for later use when signing
           setAllStudentRequirements(allRequirements);
 
           // Filter requirements that match the current requirement ID (if provided)
@@ -347,10 +351,9 @@ export const SaoOfficer = () => {
               (req) => req.requirementId === reqId
             );
             console.log(
-              `📋 Found ${relevantRequirements.length} requirements for current requirement ID: ${reqId}`
+              `📋 [Dean] Found ${relevantRequirements.length} requirements for current requirement ID: ${reqId}`
             );
 
-            // Create a map of studentId -> requirement for quick lookup
             const requirementMap = new Map(
               relevantRequirements.map((req) => [req.studentId, req])
             );
@@ -362,7 +365,7 @@ export const SaoOfficer = () => {
                 if (requirement) {
                   const reqId = requirement._id || requirement.id;
                   console.log(
-                    `✓ Student ${student.schoolId} has requirement with status: ${requirement.status}, _id: ${reqId}`
+                    `✓ [Dean] Student ${student.schoolId} has requirement with status: ${requirement.status}, _id: ${reqId}`
                   );
                   return {
                     ...student,
@@ -383,7 +386,7 @@ export const SaoOfficer = () => {
 
             // Check for students with active permits BEFORE setting state
             console.log(
-              "🔍 [Institutional] Checking for students with active permits..."
+              "🔍 [Dean] Checking for students with active permits..."
             );
             const permitChecks = studentsWithRequirements.map(
               async (student) => {
@@ -392,7 +395,7 @@ export const SaoOfficer = () => {
 
                 if (permitData && permitId) {
                   console.log(
-                    `📋 [Institutional] Student ${student.schoolId} has permit ID: ${permitId}`
+                    `📋 [Dean] Student ${student.schoolId} has permit ID: ${permitId}`
                   );
                 }
 
@@ -415,7 +418,7 @@ export const SaoOfficer = () => {
             );
 
             console.log(
-              `✅ [Institutional] Found ${studentsWithActivePermits.size} student(s) with active permits`
+              `✅ [Dean] Found ${studentsWithActivePermits.size} student(s) with active permits`
             );
             setStudentsWithPermits(studentsWithActivePermits);
             setStudentPermitIds(permitIdMap);
@@ -425,7 +428,7 @@ export const SaoOfficer = () => {
               (student) => {
                 if (studentsWithActivePermits.has(student.schoolId)) {
                   console.log(
-                    `✅ [Institutional] Setting student ${student.schoolId} status to "Cleared"`
+                    `✅ [Dean] Setting student ${student.schoolId} status to "Cleared"`
                   );
                   return {
                     ...student,
@@ -438,7 +441,7 @@ export const SaoOfficer = () => {
 
             setStudents(studentsWithClearedStatus);
             console.log(
-              "✅ Students merged with requirements:",
+              "✅ [Dean] Students merged with requirements:",
               studentsWithRequirements
             );
           } else {
@@ -446,8 +449,10 @@ export const SaoOfficer = () => {
             setStudents(transformedStudents);
           }
         } catch (reqError) {
-          console.warn("⚠️ Could not fetch student requirements:", reqError);
-          // If fetching requirements fails, just use the transformed students without requirements
+          console.warn(
+            "⚠️ [Dean] Could not fetch student requirements:",
+            reqError
+          );
           setStudents(transformedStudents);
         }
       } catch (err) {
@@ -459,7 +464,7 @@ export const SaoOfficer = () => {
     };
 
     fetchStudents();
-  }, [reqId]);
+  }, [reqId, departmentParams]);
 
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
@@ -481,7 +486,6 @@ export const SaoOfficer = () => {
   const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
 
   useEffect(() => {
-    // Reset page when filter/search changes
     setCurrentPage(1);
   }, [searchQuery, statusFilter, itemsPerPage]);
 
@@ -519,7 +523,6 @@ export const SaoOfficer = () => {
       return;
     }
 
-    // Check if student has active permit (QR code)
     if (studentsWithPermits.has(student.schoolId)) {
       message.warning(
         `Cannot undo signature for ${student.firstName} ${student.lastName}. This student has an active clearance permit (QR code) and has completed all requirements.`
@@ -529,35 +532,33 @@ export const SaoOfficer = () => {
 
     try {
       console.log(
-        "🔄 Attempting to undo signature for student:",
+        "🔄 [Dean] Attempting to undo signature for student:",
         student.firstName,
         student.lastName
       );
 
-      // Check if student has a studentRequirementId to update
       if (student.studentRequirementId) {
         const hideLoading = message.loading("Undoing signature...", 0);
 
         console.log(
-          "📤 Sending update request with ID:",
+          "📤 [Dean] Sending update request with ID:",
           student.studentRequirementId
         );
 
-        // Update the student requirement status to "incomplete"
-        const result = await updateStudentRequirementIns(
+        const result = await updateStudentRequirement(
           student.studentRequirementId,
           "incomplete",
           student.schoolId,
           user?.id,
-          reqId
+          reqId,
+          user?.role
         );
 
-        console.log("📥 Update result:", result);
+        console.log("📥 [Dean] Update result:", result);
 
         hideLoading();
 
         if (result) {
-          // Update allStudentRequirements state
           setAllStudentRequirements((prev) =>
             prev.map((req) =>
               req._id === student.studentRequirementId ||
@@ -567,10 +568,9 @@ export const SaoOfficer = () => {
             )
           );
           console.log(
-            "✅ Updated requirement in state with status: incomplete"
+            "✅ [Dean] Updated requirement in state with status: incomplete"
           );
 
-          // Update local state
           setStudents((prev) =>
             prev.map((s) =>
               s.id === id
@@ -582,29 +582,28 @@ export const SaoOfficer = () => {
                 : s
             )
           );
-          console.log("✅ Local state updated successfully");
+          console.log("✅ [Dean] Local state updated successfully");
           message.success(
             `${student.firstName} ${student.lastName} signature removed`
           );
         } else {
-          console.error("❌ Update returned null");
+          console.error("❌ [Dean] Update returned null");
           message.error("Failed to undo signature");
         }
       } else {
         console.warn(
-          "⚠️ No student requirement ID found for student:",
+          "⚠️ [Dean] No student requirement ID found for student:",
           student.firstName,
           student.lastName
         );
 
-        // No student requirement ID found, just update local state
         setStudents((prev) =>
           prev.map((s) => (s.id === id ? { ...s, status: "Incomplete" } : s))
         );
         message.warning("No database record found. Updated locally only.");
       }
     } catch (error) {
-      console.error("❌ Error undoing signature:", error);
+      console.error("❌ [Dean] Error undoing signature:", error);
       message.error("An error occurred while undoing the signature");
     }
   };
@@ -618,13 +617,10 @@ export const SaoOfficer = () => {
     }
 
     if (student?.status === "Signed") {
-      // Show confirmation dialog before unsigning
       setUnsignTarget({ type: "single", studentId: id });
       setShowUnsignDialog(true);
     } else {
-      // Sign the student and save to database
       try {
-        // Validate required data
         if (!user?.id) {
           message.error("Clearing officer ID not found");
           return;
@@ -638,12 +634,12 @@ export const SaoOfficer = () => {
           return;
         }
 
-        // Check if student requirement already exists
-        const existingRequirement = findExistingStudentRequirementIns(
+        const existingRequirement = findExistingStudentRequirementByRole(
           allStudentRequirements,
           student.schoolId,
           user.id,
-          reqId
+          reqId,
+          user.role
         );
 
         const hideLoading = message.loading("Signing student...", 0);
@@ -652,24 +648,23 @@ export const SaoOfficer = () => {
         let storedId: string | undefined;
 
         if (existingRequirement) {
-          // Update existing requirement
           const existingId = existingRequirement._id || existingRequirement.id;
           console.log(
-            "♻️ Requirement exists! Updating status to 'signed' for ID:",
+            "♻️ [Dean] Requirement exists! Updating status to 'signed' for ID:",
             existingId
           );
 
-          result = await updateStudentRequirementIns(
+          result = await updateStudentRequirement(
             existingId!,
             "signed",
             student.schoolId,
             user.id,
-            reqId
+            reqId,
+            user.role
           );
 
           storedId = existingId;
 
-          // Update the requirement in allStudentRequirements state
           if (result) {
             setAllStudentRequirements((prev) =>
               prev.map((req) =>
@@ -678,11 +673,14 @@ export const SaoOfficer = () => {
                   : req
               )
             );
-            console.log("✅ Updated requirement in state with status: signed");
+            console.log(
+              "✅ [Dean] Updated requirement in state with status: signed"
+            );
           }
         } else {
-          // Create new student requirement
-          console.log("➕ No existing requirement found. Creating new one...");
+          console.log(
+            "➕ [Dean] No existing requirement found. Creating new one..."
+          );
 
           const requirementData = {
             studentId: student.schoolId,
@@ -692,17 +690,16 @@ export const SaoOfficer = () => {
             status: "signed" as const,
           };
 
-          console.log("📦 Prepared requirement data:", requirementData);
+          console.log("📦 [Dean] Prepared requirement data:", requirementData);
 
-          result = await createStudentRequirementIns(requirementData);
+          result = await createStudentRequirement(requirementData);
           storedId = result?._id || result?.id;
 
-          console.log("📦 Full API response:", result);
-          console.log("🔑 Extracted _id:", result?._id);
-          console.log("🔑 Extracted id:", result?.id);
-          console.log("✅ Will store student requirement ID:", storedId);
+          console.log("📦 [Dean] Full API response:", result);
+          console.log("🔑 [Dean] Extracted _id:", result?._id);
+          console.log("🔑 [Dean] Extracted id:", result?.id);
+          console.log("✅ [Dean] Will store student requirement ID:", storedId);
 
-          // Add new requirement to state
           if (result) {
             setAllStudentRequirements((prev) => [
               ...prev,
@@ -714,7 +711,6 @@ export const SaoOfficer = () => {
         hideLoading();
 
         if (result) {
-          // Update local state to reflect the signed status and store the student requirement ID
           setStudents((prev) =>
             prev.map((s) =>
               s.id === id
@@ -739,30 +735,24 @@ export const SaoOfficer = () => {
     }
   };
 
-  // Handle unsign confirmation
   const handleConfirmUnsign = async () => {
     if (!unsignTarget) return;
 
     if (unsignTarget.type === "single" && unsignTarget.studentId) {
-      // Single student unsign
       await performUnsign(unsignTarget.studentId);
     } else if (unsignTarget.type === "bulk") {
-      // Bulk unsign
       await performBulkUnsign();
     }
 
-    // Close dialog and reset target
     setShowUnsignDialog(false);
     setUnsignTarget(null);
   };
 
-  // Perform bulk unsigning logic
   const performBulkUnsign = async () => {
     const selectedStudentsData = students.filter((student) =>
       selectedIds.includes(student.id)
     );
 
-    // Check if any selected students have active permits
     const studentsWithActivePermits = selectedStudentsData.filter((student) =>
       studentsWithPermits.has(student.schoolId)
     );
@@ -777,7 +767,6 @@ export const SaoOfficer = () => {
       return;
     }
 
-    // Filter students that have requirement IDs
     const studentsWithReqIds = selectedStudentsData.filter(
       (s) => s.studentRequirementId
     );
@@ -788,14 +777,14 @@ export const SaoOfficer = () => {
         0
       );
 
-      // Update all student requirements in parallel
       const updatePromises = studentsWithReqIds.map((student) =>
-        updateStudentRequirementIns(
+        updateStudentRequirement(
           student.studentRequirementId!,
           "incomplete",
           student.schoolId,
           user?.id,
-          reqId
+          reqId,
+          user?.role
         )
       );
 
@@ -808,7 +797,6 @@ export const SaoOfficer = () => {
       ).length;
       const failedCount = results.length - successCount;
 
-      // Update allStudentRequirements state for successfully updated students
       const successfulReqIds = studentsWithReqIds
         .filter((_, index) => results[index].status === "fulfilled")
         .map((s) => s.studentRequirementId);
@@ -820,9 +808,10 @@ export const SaoOfficer = () => {
             : req
         )
       );
-      console.log("✅ Updated requirements in state with status: incomplete");
+      console.log(
+        "✅ [Dean] Updated requirements in state with status: incomplete"
+      );
 
-      // Update local state for all selected students
       setStudents((prev) =>
         prev.map((student) =>
           selectedIds.includes(student.id)
@@ -843,7 +832,6 @@ export const SaoOfficer = () => {
         message.success(`Successfully undone ${successCount} signature(s)`);
       }
     } else {
-      // No requirement IDs found, just update local state
       setStudents((prev) =>
         prev.map((student) =>
           selectedIds.includes(student.id)
@@ -858,7 +846,6 @@ export const SaoOfficer = () => {
   };
 
   const handleBulkSign = async (sign: boolean) => {
-    // Get all selected students
     const selectedStudentsData = students.filter((student) =>
       selectedIds.includes(student.id)
     );
@@ -875,7 +862,6 @@ export const SaoOfficer = () => {
     console.log("Clearing Officer ID:", user?.id);
     console.log("Requirement ID:", reqId);
 
-    // Validate required data
     if (!user?.id) {
       message.error("Clearing officer ID not found");
       return;
@@ -891,16 +877,15 @@ export const SaoOfficer = () => {
 
     try {
       if (sign) {
-        // SIGNING STUDENTS
-        // Show loading message
         const hideLoading = message.loading(
           `Signing ${selectedStudentsData.length} student(s)...`,
           0
         );
 
-        console.log("🔍 Checking for existing requirements in bulk sign...");
+        console.log(
+          "🔍 [Dean] Checking for existing requirements in bulk sign..."
+        );
 
-        // Separate students into those with existing requirements and those without
         const studentsToUpdate: Array<{
           student: (typeof selectedStudentsData)[0];
           existingReqId: string;
@@ -908,44 +893,51 @@ export const SaoOfficer = () => {
         const studentsToCreate: typeof selectedStudentsData = [];
 
         selectedStudentsData.forEach((student) => {
-          const existingRequirement = findExistingStudentRequirementIns(
+          const existingRequirement = findExistingStudentRequirementByRole(
             allStudentRequirements,
             student.schoolId,
             user.id,
-            reqId
+            reqId,
+            user.role
           );
 
           if (existingRequirement) {
             const existingId =
               existingRequirement._id || existingRequirement.id;
             console.log(
-              `♻️ Student ${student.schoolId} has existing requirement: ${existingId}`
+              `♻️ [Dean] Student ${student.schoolId} has existing requirement: ${existingId}`
             );
             studentsToUpdate.push({ student, existingReqId: existingId! });
           } else {
-            console.log(`➕ Student ${student.schoolId} needs new requirement`);
+            console.log(
+              `➕ [Dean] Student ${student.schoolId} needs new requirement`
+            );
             studentsToCreate.push(student);
           }
         });
 
         console.log(
-          `📊 Summary: ${studentsToUpdate.length} to update, ${studentsToCreate.length} to create`
+          `📊 [Dean] Summary: ${studentsToUpdate.length} to update, ${studentsToCreate.length} to create`
         );
 
         const studentReqIdMap = new Map<string, string>();
 
-        // Update existing requirements
         if (studentsToUpdate.length > 0) {
-          console.log("🔄 Updating existing requirements...");
+          console.log("🔄 [Dean] Updating existing requirements...");
           const updatePromises = studentsToUpdate.map(
             ({ student, existingReqId }) =>
-              updateStudentRequirementIns(
+              updateStudentRequirement(
                 existingReqId,
                 "signed",
                 student.schoolId,
                 user.id,
-                reqId
-              ).then((result) => ({ student, result, existingReqId }))
+                reqId,
+                user.role
+              ).then((result: StudentRequirement | null) => ({
+                student,
+                result,
+                existingReqId,
+              }))
           );
 
           const updateResults = await Promise.allSettled(updatePromises);
@@ -956,11 +948,12 @@ export const SaoOfficer = () => {
               const { student, existingReqId } = promiseResult.value;
               studentReqIdMap.set(student.schoolId, existingReqId);
               successfulUpdateIds.push(existingReqId);
-              console.log(`✅ Updated ${student.schoolId} -> ${existingReqId}`);
+              console.log(
+                `✅ [Dean] Updated ${student.schoolId} -> ${existingReqId}`
+              );
             }
           });
 
-          // Update allStudentRequirements state for successfully updated requirements
           if (successfulUpdateIds.length > 0) {
             setAllStudentRequirements((prev) =>
               prev.map((req) =>
@@ -970,15 +963,14 @@ export const SaoOfficer = () => {
               )
             );
             console.log(
-              `✅ Updated ${successfulUpdateIds.length} requirements in state with status: signed`
+              `✅ [Dean] Updated ${successfulUpdateIds.length} requirements in state with status: signed`
             );
           }
         }
 
-        // Create new requirements
         let createResults: StudentRequirement[] = [];
         if (studentsToCreate.length > 0) {
-          console.log("➕ Creating new requirements...");
+          console.log("➕ [Dean] Creating new requirements...");
           const bulkRequirements = studentsToCreate.map((student) => ({
             studentId: student.schoolId,
             coId: user.id,
@@ -987,21 +979,20 @@ export const SaoOfficer = () => {
             status: "signed" as const,
           }));
 
-          createResults = await createBulkStudentRequirementsIns(
-            bulkRequirements
-          );
+          createResults = await createBulkStudentRequirements(bulkRequirements);
 
           if (createResults && createResults.length > 0) {
-            console.log("📦 Bulk create results:", createResults);
+            console.log("📦 [Dean] Bulk create results:", createResults);
 
             createResults.forEach((result, index) => {
               const studentSchoolId = bulkRequirements[index].studentId;
               const storedId = result._id || result.id || "";
-              console.log(`✅ Created ${studentSchoolId} -> ${storedId}`);
+              console.log(
+                `✅ [Dean] Created ${studentSchoolId} -> ${storedId}`
+              );
               studentReqIdMap.set(studentSchoolId, storedId);
             });
 
-            // Add new requirements to state
             setAllStudentRequirements((prev) => [...prev, ...createResults]);
           }
         }
@@ -1011,7 +1002,6 @@ export const SaoOfficer = () => {
         const totalProcessed = studentsToUpdate.length + createResults.length;
 
         if (totalProcessed > 0) {
-          // Update local state to reflect the signed status and store student requirement IDs
           setStudents((prev) =>
             prev.map((student) =>
               selectedIds.includes(student.id)
@@ -1025,7 +1015,7 @@ export const SaoOfficer = () => {
           );
           setSelectedIds([]);
           console.log(
-            "✅ Stored student requirement IDs:",
+            "✅ [Dean] Stored student requirement IDs:",
             Array.from(studentReqIdMap.entries())
           );
           message.success(`Successfully signed ${totalProcessed} student(s)`);
@@ -1033,7 +1023,6 @@ export const SaoOfficer = () => {
           message.error("Failed to sign students");
         }
       } else {
-        // UNDOING SIGNATURES - Show confirmation dialog
         setUnsignTarget({ type: "bulk" });
         setShowUnsignDialog(true);
       }
@@ -1060,11 +1049,11 @@ export const SaoOfficer = () => {
 
     const permitId = studentPermitIds.get(student.schoolId);
     console.log(
-      `🔍 [Institutional] Looking up permit ID for student ${student.schoolId}`
+      `🔍 [Dean] Looking up permit ID for student ${student.schoolId}`
     );
-    console.log(`📋 [Institutional] Found permit ID: ${permitId}`);
+    console.log(`📋 [Dean] Found permit ID: ${permitId}`);
     console.log(
-      `📊 [Institutional] All permit IDs in map:`,
+      `📊 [Dean] All permit IDs in map:`,
       Array.from(studentPermitIds.entries())
     );
 
@@ -1087,7 +1076,6 @@ export const SaoOfficer = () => {
 
           hideLoading();
 
-          // Remove student from permits set and map
           setStudentsWithPermits((prev) => {
             const newSet = new Set(prev);
             newSet.delete(student.schoolId);
@@ -1100,7 +1088,6 @@ export const SaoOfficer = () => {
             return newMap;
           });
 
-          // Change student status from "Cleared" back to "Signed"
           setStudents((prev) =>
             prev.map((s) =>
               s.schoolId === student.schoolId
@@ -1154,14 +1141,10 @@ export const SaoOfficer = () => {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Student List </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Student List</h1>
           <p className="text-muted-foreground mt-1">
-            Manage and view all students in the system
+            Manage students in your department
           </p>
-          {/* <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="h-4 w-4 " />
-            <span className="text-sm">1st Semester AY 2023–2024</span>
-          </div> */}
         </div>
         <Button className="w-fit">
           <Download className="mr-2 h-4 w-4" />
@@ -1172,7 +1155,6 @@ export const SaoOfficer = () => {
       {/* Clearance Deadline Notice */}
       {!clearanceLoading && clearanceStatus && (
         <>
-          {/* If clearance is not active anymore */}
           {!clearanceStatus.isActive && (
             <Card className="border-orange-500/50 bg-orange-50/50 dark:bg-orange-950/20">
               <CardContent className="pt-6">
@@ -1214,7 +1196,6 @@ export const SaoOfficer = () => {
             </Card>
           )}
 
-          {/* If clearance is active but deadline has passed */}
           {clearanceStatus.isActive && hasDeadlinePassed(clearanceStatus) && (
             <Card className="border-red-500/50 bg-red-50/50 dark:bg-red-950/20">
               <CardContent className="pt-6">
@@ -1348,7 +1329,7 @@ export const SaoOfficer = () => {
             <div>
               <CardTitle>Students</CardTitle>
               <CardDescription>
-                A comprehensive list of all registered students
+                A comprehensive list of students in {departmentParams}
               </CardDescription>
             </div>
             <div className="flex flex-col md:flex-row gap-3 md:items-center">
@@ -1406,7 +1387,6 @@ export const SaoOfficer = () => {
         </CardHeader>
 
         <CardContent>
-          {/* Loading State */}
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -1415,7 +1395,6 @@ export const SaoOfficer = () => {
               </span>
             </div>
           ) : error ? (
-            /* Error State */
             <div className="flex flex-col items-center justify-center py-16">
               <UserX className="h-12 w-12 text-destructive mb-4" />
               <p className="text-destructive font-medium">{error}</p>
@@ -1424,7 +1403,6 @@ export const SaoOfficer = () => {
               </Button>
             </div>
           ) : (
-            /* Table Content */
             <>
               <div className="rounded-md border">
                 <Table>
@@ -1525,7 +1503,6 @@ export const SaoOfficer = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex  gap-2">
-                              {/* Revoke button - only visible for cashier role and students with Cleared status */}
                               {role === "cashier" &&
                                 student.status === "Cleared" && (
                                   <Button
@@ -1541,7 +1518,6 @@ export const SaoOfficer = () => {
                                   </Button>
                                 )}
 
-                              {/* Hide Sign/Undo button if student has Cleared status */}
                               {student.status !== "Cleared" && (
                                 <Button
                                   className="w-[100px]"
@@ -1662,11 +1638,12 @@ export const SaoOfficer = () => {
           )}
         </CardContent>
       </Card>
+
       <div className="fixed bottom-6 right-6 z-50">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Link to={"/clearing-officer/sao/requirements"}>
+              <Link to={"/dean/requirements"}>
                 <Button
                   size="icon"
                   className="h-12 w-12 rounded-full shadow-lg bg-blue-600"
@@ -1732,3 +1709,5 @@ export const SaoOfficer = () => {
     </div>
   );
 };
+
+export default DeanStudentList;

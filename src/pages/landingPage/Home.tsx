@@ -168,24 +168,15 @@ const Hero = () => {
                   <AvatarFallback className="text-xl">CN</AvatarFallback>
                 </Avatar>
                 <Avatar className="w-12 h-12">
-                  <AvatarImage
-                    src="https://github.com/maxleiter.png"
-                    alt="@maxleiter"
-                  />
+                  <AvatarImage src="/2.png" alt="@shadcn" />
                   <AvatarFallback className="text-xl">LR</AvatarFallback>
                 </Avatar>
                 <Avatar className="w-12 h-12">
-                  <AvatarImage
-                    src="https://github.com/evilrabbit.png"
-                    alt="@evilrabbit"
-                  />
+                  <AvatarImage src="/3.png" alt="@shadcn" />
                   <AvatarFallback className="text-xl">ER</AvatarFallback>
                 </Avatar>
                 <Avatar className="w-12 h-12">
-                  <AvatarImage
-                    src="https://github.com/evilrabbit.png"
-                    alt="@evilrabbit"
-                  />
+                  <AvatarImage src="/4.png" alt="@shadcn" />
                   <AvatarFallback className="text-xl">ER</AvatarFallback>
                 </Avatar>
               </div>

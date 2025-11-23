@@ -11,6 +11,17 @@ export interface RequirementUpdatePayload {
   description?: string;
 }
 
+export interface CreateRequirementPayload {
+  courseCode: string;
+  courseName: string;
+  yearLevel: string;
+  semester: string;
+  requirements: string[];
+  department: string;
+  description?: string;
+  userId: string;
+}
+
 /**
  * Update a requirement by ID
  * @param id - The requirement ID (_id from MongoDB)
@@ -55,6 +66,21 @@ export const getAllRequirements = async () => {
     return response.data;
   } catch (error) {
     console.error("Error fetching requirements:", error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new department requirement
+ * @param data - The requirement data to create
+ * @returns The created requirement data
+ */
+export const createRequirement = async (data: CreateRequirementPayload) => {
+  try {
+    const response = await axiosInstance.post("/req/addReq", data);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating requirement:", error);
     throw error;
   }
 };
