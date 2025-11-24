@@ -142,12 +142,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute
               allowedRoles={[
                 "sao",
+                "umsa",
+                "sgo",
+                "kahayag",
                 "registrar",
                 "cashier",
                 "laboratory",
                 "library",
                 "tailoring",
                 "guidance",
+                "dean",
               ]}
             >
               <SaoOfficer />
