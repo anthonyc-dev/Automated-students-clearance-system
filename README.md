@@ -3,8 +3,10 @@
 
 A backend server that supports the Automated Students Clearance System — a tool to manage student clearance workflows, roles, and approvals for educational institutions. This repository serves as the server component for an authentication/authorization template used across projects.
 
-Important: This is the anthonyc-dev/auth-templat server — you can view the auth template repository here: [anthonyc-dev/auth-templat](https://github.com/anthonyc-dev/auth-templat).  
+Important: This is the anthonyc-dev/auth-templat server — you can view the auth template repository here: [Backend](https://github.com/anthonyc-dev/auth-template).  
 Repository: [anthonyc-dev/Automated-students-clearance-system](https://github.com/anthonyc-dev/Automated-students-clearance-system)
+
+---
 
 [![React](https://img.shields.io/badge/React-19.1.0-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
@@ -147,7 +149,7 @@ If using the anthonyc-dev/auth-templat as a base, follow its conventions for tok
 Hello HR / Visitor — this repository contains the server-side logic for the Automated Students Clearance System. If you are reviewing this for hiring, audit, or evaluation:
 - The server exposes role-protected APIs for user and clearance management.
 - The project pairs with front-end applications and the anthonyc-dev/auth-templat repo for authentication patterns.
-- You can view the authentication template and supporting code here: [anthonyc-dev/auth-templat](https://github.com/anthonyc-dev/auth-templat).  
+- You can view the authentication template and supporting code here: [Backend](https://github.com/anthonyc-dev/auth-template).  
 If you need, I can provide:
 - A short walkthrough of key modules and endpoints
 - Example API requests (Postman collection)
@@ -175,10 +177,5 @@ Maintainer / Contact:
 
 ---
 
-Thank you for reviewing the project. If you want, I can:
-- Tailor this README to match the exact stack and scripts in the repository
-- Create and open a README.md file in the repo for you (I will need permission to push or your confirmation to proceed)
-
-[Report Bug](https://github.com/your-username/clearing-officer-admin/issues) · [Request Feature](https://github.com/your-username/clearing-officer-admin/issues) · [Documentation](https://github.com/your-username/clearing-officer-admin/wiki)
-
+@Anthony
 </div>
