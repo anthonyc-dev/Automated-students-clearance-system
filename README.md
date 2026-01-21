@@ -1,12 +1,3 @@
-# 🎓 Online Clearance Officer Admin System
-
-> A comprehensive React-based web application for managing student clearance processes in educational institutions.
-
-[![React](https://img.shields.io/badge/React-19.1.0-blue.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-6.3.5-purple.svg)](https://vitejs.dev/)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.1.11-cyan.svg)](https://tailwindcss.com/)
-[![Ant Design](https://img.shields.io/badge/Ant%20Design-5.26.0-red.svg)](https://ant.design/)
 
 # Automated Students Clearance System
 
@@ -14,6 +5,12 @@ A backend server that supports the Automated Students Clearance System — a too
 
 Important: This is the anthonyc-dev/auth-templat server — you can view the auth template repository here: [anthonyc-dev/auth-templat](https://github.com/anthonyc-dev/auth-templat).  
 Repository: [anthonyc-dev/Automated-students-clearance-system](https://github.com/anthonyc-dev/Automated-students-clearance-system)
+
+[![React](https://img.shields.io/badge/React-19.1.0-blue.svg)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6.3.5-purple.svg)](https://vitejs.dev/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.1.11-cyan.svg)](https://tailwindcss.com/)
+[![Ant Design](https://img.shields.io/badge/Ant%20Design-5.26.0-red.svg)](https://ant.design/)
 
 ---
 
