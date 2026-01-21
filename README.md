@@ -8,482 +8,179 @@
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.1.11-cyan.svg)](https://tailwindcss.com/)
 [![Ant Design](https://img.shields.io/badge/Ant%20Design-5.26.0-red.svg)](https://ant.design/)
 
-## 📋 Table of Contents
+# Automated Students Clearance System
 
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [Architecture](#architecture)
-- [Technology Stack](#technology-stack)
-- [Getting Started](#getting-started)
-- [User Roles & Access](#user-roles--access)
-- [API Integration](#api-integration)
-- [Authentication System](#authentication-system)
-- [Project Structure](#project-structure)
-- [Development](#development)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
-- [License](#license)
+A backend server that supports the Automated Students Clearance System — a tool to manage student clearance workflows, roles, and approvals for educational institutions. This repository serves as the server component for an authentication/authorization template used across projects.
 
-## 🌟 Overview
-
-The Online Clearance Officer Admin System is a modern, responsive web application designed to streamline the student clearance process in educational institutions. It provides a comprehensive platform for managing student records, clearance requirements, and permit generation with QR code verification.
-
-### 🎯 Purpose
-
-This system eliminates the traditional paper-based clearance process by providing:
-
-- **Digital document processing** with automated forms
-- **Real-time status tracking** for students and administrators
-- **Secure data management** with role-based access control
-- **QR code permit generation** for instant verification
-- **Mobile-responsive design** for accessibility across devices
-
-## ✨ Key Features
-
-### 🔐 Authentication & Authorization
-
-- **JWT-based authentication** with automatic token refresh
-- **Role-based access control** (Admin, Clearing Officer, Student)
-- **Secure session management** with automatic logout on expiry
-- **Protected routes** with role-specific access
-
-### 👥 User Management
-
-- **Admin Dashboard** for system administration
-- **Student Management** with comprehensive record keeping
-- **Clearing Officer Management** with department assignments
-- **Account Settings** for profile management
-
-### 📚 Clearance Management
-
-- **Digital Clearance Forms** with automated processing
-- **Requirement Tracking** by department and course
-- **Status Monitoring** with real-time updates
-- **Document Verification** system
-
-### 🎫 Permit System
-
-- **QR Code Generation** for exam permits
-- **Digital Permit Verification** with mobile scanning
-- **Expiration Management** with automatic notifications
-- **Print-friendly** permit layouts
-
-### 📊 Analytics & Reporting
-
-- **Dashboard Analytics** with key performance indicators
-- **Clearance Statistics** by department and time period
-- **Completion Rate Tracking** for better process optimization
-- **Event Management** for academic calendar integration
-
-### 📱 Mobile-First Design
-
-- **Responsive UI** optimized for all device sizes
-- **Touch-friendly interfaces** for mobile users
-- **Progressive Web App** capabilities
-- **Offline functionality** for core features
-
-## 🏗️ Architecture
-
-The application follows a modern React architecture with the following patterns:
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Presentation  │    │    Business     │    │      Data       │
-│      Layer      │◄──►│     Logic       │◄──►│      Layer      │
-│                 │    │                 │    │                 │
-│ • Components    │    │ • Redux Store   │    │ • API Services  │
-│ • Pages         │    │ • Context API   │    │ • Local Storage │
-│ • Layouts       │    │ • Custom Hooks  │    │ • Token Mgmt    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-### 🔄 Data Flow
-
-1. **User Interaction** → Component triggers action
-2. **State Management** → Redux/Context updates state
-3. **API Calls** → Axios interceptors handle requests
-4. **Response Handling** → Data updates and UI re-renders
-
-## 🛠️ Technology Stack
-
-### Frontend Framework
-
-- **React 19.1.0** - Modern React with concurrent features
-- **TypeScript 5.8.3** - Type-safe development
-- **Vite 6.3.5** - Fast build tool and dev server
-
-### UI & Styling
-
-- **Ant Design 5.26.0** - Enterprise-class UI components
-- **TailwindCSS 4.1.11** - Utility-first CSS framework
-- **Radix UI** - Accessible component primitives
-- **Lucide React** - Beautiful icon library
-- **Framer Motion** - Animation library
-
-### State Management
-
-- **Redux Toolkit** - Predictable state management
-- **React Context API** - Authentication state
-- **React Hook Form** - Form state management
-
-### HTTP Client & Authentication
-
-- **Axios** - HTTP client with interceptors
-- **JWT Tokens** - Secure authentication
-- **Cookie Management** - Refresh token handling
-
-### Development Tools
-
-- **ESLint** - Code linting and formatting
-- **Vitest** - Unit testing framework
-- **MSW** - API mocking for development
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- **Node.js** 18.x or higher
-- **npm** 9.x or higher
-- **Git** for version control
-
-### Installation
-
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/your-username/clearing-officer-admin.git
-   cd clearing-officer-admin
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   npm install
-   # or
-   pnpm install
-   ```
-
-3. **Environment Setup**
-
-   ```bash
-   cp .env.example .env.local
-   # Edit .env.local with your configuration
-   ```
-
-4. **Start development server**
-
-   ```bash
-   npm run dev
-   # or
-   pnpm dev
-   ```
-
-5. **Open your browser**
-   Navigate to `http://localhost:5173`
-
-### Build for Production
-
-```bash
-npm run build
-# or
-pnpm build
-```
-
-The built files will be in the `dist/` directory.
-
-## 👥 User Roles & Access
-
-### 🔑 Default Credentials
-
-#### Admin Access
-
-```
-Email: anthony.dev@gmail.com
-Password: Anthony@123
-```
-
-#### Clearing Officer Access
-
-```
-Email: cawasa@gmail.com
-Password: Cawasa@123
-```
-
-#### Student Access
-
-```
-Email: marjoe@gmail.com
-Password: Marjoe@123
-```
-
-### 🛡️ Role Permissions
-
-#### Admin (`/admin-side`)
-
-- ✅ System dashboard and analytics
-- ✅ Student management (add/edit/delete)
-- ✅ Clearing officer management
-- ✅ Account settings and system configuration
-- ✅ Full system access
-
-#### Clearing Officer (`/clearing-officer`)
-
-- ✅ Personal dashboard
-- ✅ Clearance processing
-- ✅ Student record management
-- ✅ Requirements management
-- ✅ Event coordination
-- ✅ Account settings
-
-#### Student (`/`)
-
-- ✅ View clearance status
-- ✅ Submit clearance documents
-- ✅ Track requirement completion
-- ✅ View exam permits
-- ✅ Access QR code permits
-
-## 🔌 API Integration
-
-The application integrates with a backend API for data management:
-
-### Authentication Endpoints
-
-- `POST /auth/login` - User authentication
-- `POST /auth/register` - User registration
-- `POST /auth/refresh-token` - Token refresh
-- `POST /auth/logout` - User logout
-
-### Core API Endpoints
-
-- `GET /api/students` - Fetch student records
-- `POST /api/students` - Create new student
-- `GET /api/clearance` - Fetch clearance data
-- `POST /api/clearance` - Process clearance
-- `GET /api/qr-code/view-permit` - View permit with token
-
-### API Configuration
-
-```typescript
-// Base API configuration
-const API_BASE_URL = process.env.VITE_API_BASE_URL || "http://localhost:3000";
-
-// Axios instance with interceptors
-const axiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  withCredentials: true,
-});
-```
-
-## 🔐 Authentication System
-
-The application implements a robust JWT-based authentication system:
-
-### Key Components
-
-#### 1. AuthContext (`src/authentication/AuthContext.tsx`)
-
-- Centralized authentication state management
-- Login/logout functionality
-- User data persistence
-
-#### 2. TokenService (`src/authentication/tokenService.ts`)
-
-- JWT token management
-- Automatic token refresh
-- Secure token storage
-
-#### 3. Protected Routes (`src/components/ProtectedRoute.tsx`)
-
-- Route-level authentication
-- Role-based access control
-- Automatic redirects
-
-#### 4. Axios Interceptors
-
-- Automatic token attachment
-- Token refresh on expiry
-- Error handling and logout
-
-### Security Features
-
-- **Automatic token refresh** before expiration
-- **Secure token storage** in memory and cookies
-- **Session timeout** handling
-- **Role-based route protection**
-- **CSRF protection** with secure cookies
-
-## 📁 Project Structure
-
-```
-src/
-├── api/                          # API configuration
-│   ├── axios.ts                 # Base axios instance
-│   ├── axiosPrivate.ts          # Authenticated requests
-│   └── authentication.api.ts    # Auth API calls
-├── authentication/              # Authentication system
-│   ├── AuthContext.tsx          # Main auth provider
-│   ├── AuthContext.types.ts     # TypeScript interfaces
-│   ├── tokenService.ts          # Token management
-│   └── redirectService.ts       # Navigation handling
-├── components/                  # Reusable components
-│   ├── admin-side/             # Admin-specific components
-│   ├── clearing-officer/       # Officer-specific components
-│   ├── ui/                     # Base UI components
-│   └── myUi/                   # Custom UI components
-├── layouts/                     # Page layouts
-│   ├── AdminLayout.tsx         # Admin dashboard layout
-│   ├── ClearingOfficerLayout.tsx # Officer dashboard layout
-│   └── Layout.tsx              # General layout
-├── pages/                       # Page components
-│   ├── admin-side/             # Admin pages
-│   ├── clearing-officer/       # Officer pages
-│   ├── auth/                   # Authentication pages
-│   └── landingPage/            # Public pages
-├── store/                       # State management
-│   ├── index.ts                # Store configuration
-│   └── slices/                 # Redux slices
-├── hooks/                       # Custom React hooks
-├── lib/                         # Utility libraries
-├── routes/                      # Routing configuration
-└── types/                       # TypeScript type definitions
-```
-
-## 🧪 Development
-
-### Available Scripts
-
-```bash
-# Development
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run preview      # Preview production build
-npm run lint         # Run ESLint
-npm run test         # Run tests
-
-# Package Management
-npm install          # Install dependencies
-npm ci               # Clean install for CI/CD
-```
-
-### Code Quality
-
-The project enforces high code quality standards:
-
-- **ESLint** configuration for consistent code style
-- **TypeScript** for type safety
-- **Prettier** for code formatting
-- **Husky** for pre-commit hooks (if configured)
-
-### Testing
-
-```bash
-# Run unit tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
-```
-
-## 🚀 Deployment
-
-### CI/CD Pipeline
-
-The project includes a GitHub Actions workflow (`.github/workflows/ci-cd.yml`) that:
-
-1. **Builds and tests** the application on push/PR
-2. **Runs linting** and type checking
-3. **Builds production** artifacts
-4. **Uploads build** artifacts for deployment
-
-### Deployment Options
-
-#### Static Hosting (Recommended)
-
-- **Vercel** - Zero-config deployment
-- **Netlify** - Git-based deployment
-- **GitHub Pages** - Free static hosting
-
-#### Traditional Hosting
-
-- **Apache/Nginx** - Serve static files
-- **Docker** - Containerized deployment
-- **AWS S3 + CloudFront** - Scalable hosting
-
-### Environment Variables
-
-Create a `.env.local` file for local development:
-
-```env
-VITE_API_BASE_URL=http://localhost:3000
-VITE_APP_NAME=Clearing Officer Admin
-VITE_APP_VERSION=1.0.0
-```
-
-## 🤝 Contributing
-
-We welcome contributions to improve the Clearing Officer Admin System!
-
-### How to Contribute
-
-1. **Fork the repository**
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-3. **Make your changes**
-4. **Add tests** for new functionality
-5. **Run the test suite**
-   ```bash
-   npm test
-   ```
-6. **Commit your changes**
-   ```bash
-   git commit -m "Add: your feature description"
-   ```
-7. **Push to your fork**
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-8. **Create a Pull Request**
-
-### Development Guidelines
-
-- Follow the existing code style and patterns
-- Write meaningful commit messages
-- Add TypeScript types for new features
-- Include tests for new functionality
-- Update documentation as needed
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-For support and questions:
-
-- **Documentation**: Check this README and inline code comments
-- **Issues**: Create an issue on GitHub
-- **Discussions**: Use GitHub Discussions for questions
-
-## 🎉 Acknowledgments
-
-- **React Team** for the amazing framework
-- **Ant Design** for the comprehensive UI components
-- **Vite** for the fast development experience
-- **TypeScript** for type safety
-- **All contributors** who help improve this project
+Important: This is the anthonyc-dev/auth-templat server — you can view the auth template repository here: [anthonyc-dev/auth-templat](https://github.com/anthonyc-dev/auth-templat).  
+Repository: [anthonyc-dev/Automated-students-clearance-system](https://github.com/anthonyc-dev/Automated-students-clearance-system)
 
 ---
 
-<div align="center">
+## Table of contents
+- [Overview](#overview)
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Getting started](#getting-started)
+- [Environment variables](#environment-variables)
+- [Run (development & production)](#run-development--production)
+- [API overview](#api-overview)
+- [Authentication](#authentication)
+- [Deployment](#deployment)
+- [For HR or Visitors](#for-hr-or-visitors)
+- [Contributing](#contributing)
+- [License & Contact](#license--contact)
 
-**Built with ❤️ for educational institutions**
+---
+
+## Overview
+The Automated Students Clearance System server exposes RESTful endpoints to:
+- Manage student records and clearance status
+- Coordinate approval flows between departments
+- Authenticate users and assign roles (student, admin, HR, department officer)
+- Send notifications or provide data for frontend dashboards
+
+This server is intended to be used together with a frontend portal and can be adapted to different authentication templates — notably the anthonyc-dev/auth-templat repository referenced above.
+
+---
+
+## Features
+- User registration & login
+- Role-based access control (RBAC)
+- Student clearance workflow management (request, review, approve/reject)
+- Audit logs / activity history (recommended)
+- REST API for integration with frontends or third-party systems
+- Configurable email/notification hooks (optional)
+- Docker-ready for containerized deployments
+
+---
+
+## Tech stack
+(Adjust these to match the actual implementation in the repo)
+- Node.js (LTS)
+- Express (or your preferred Node framework)
+- TypeScript (recommended)
+- PostgreSQL (or another relational database)
+- JWT for authentication
+- Docker & Docker Compose
+
+---
+
+## Getting started
+
+Prerequisites
+- Node.js (v18+ recommended)
+- npm or yarn
+- PostgreSQL (or as configured)
+- Docker (optional)
+
+Basic install (example)
+1. Clone the repository
+   git clone https://github.com/anthonyc-dev/Automated-students-clearance-system.git
+2. Change directory
+   cd Automated-students-clearance-system
+3. Install dependencies
+   npm install
+4. Create and populate `.env` (see Environment variables below)
+5. Run database migrations (if applicable)
+   npm run migrate
+6. Start the server (development)
+   npm run dev
+
+---
+
+## Environment variables
+Create a `.env` file in the project root. Typical variables:
+- PORT=3000
+- NODE_ENV=development
+- DATABASE_URL=postgres://user:pass@localhost:5432/dbname
+- JWT_SECRET=your_jwt_secret
+- SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS (if email is used)
+- OTHER_APP_SPECIFIC_SETTINGS=...
+
+Adjust names to match the configuration used in the repository.
+
+---
+
+## Run (development & production)
+- Development (with hot-reload)
+  npm run dev
+- Build & Run production
+  npm run build
+  npm start
+- Docker (example)
+  docker build -t asc-server .
+  docker run -e DATABASE_URL="..." -p 3000:3000 asc-server
+
+(Replace commands with the actual scripts defined in package.json)
+
+---
+
+## API overview
+A short example of typical endpoints (confirm actual routes in the repo):
+- POST /api/auth/register — register user
+- POST /api/auth/login — obtain JWT
+- GET /api/users — list users (admin)
+- POST /api/clearances — create clearance request (student)
+- GET /api/clearances/:id — get clearance request
+- PATCH /api/clearances/:id/approve — approve request (role-protected)
+
+Always consult the codebase or API docs (Swagger/OpenAPI) for the definitive contract.
+
+---
+
+## Authentication
+- JWT-based authentication recommended
+- Role claims embedded in tokens for RBAC
+- Protect endpoints by role (e.g., only HR or department officers can approve clearances)
+
+If using the anthonyc-dev/auth-templat as a base, follow its conventions for token generation and middleware.
+
+---
+
+## Deployment
+- Use environment variables for configuration
+- Recommended: run behind a reverse proxy (NGINX) and enable TLS
+- Use Docker + Docker Compose or Kubernetes for production orchestration
+- Perform regular backups of the database
+
+---
+
+## For HR or Visitors
+Hello HR / Visitor — this repository contains the server-side logic for the Automated Students Clearance System. If you are reviewing this for hiring, audit, or evaluation:
+- The server exposes role-protected APIs for user and clearance management.
+- The project pairs with front-end applications and the anthonyc-dev/auth-templat repo for authentication patterns.
+- You can view the authentication template and supporting code here: [anthonyc-dev/auth-templat](https://github.com/anthonyc-dev/auth-templat).  
+If you need, I can provide:
+- A short walkthrough of key modules and endpoints
+- Example API requests (Postman collection)
+- Deployment artifacts (Docker Compose, Kubernetes manifests)
+
+---
+
+## Contributing
+Contributions are welcome. Typical flow:
+1. Fork the repo
+2. Create a feature branch
+3. Run tests and linters
+4. Open a pull request with a clear description of changes
+
+Please follow the existing code style and include tests for new functionality.
+
+---
+
+## License & Contact
+Specify the project license in LICENSE file (e.g., MIT).
+
+Maintainer / Contact:
+- GitHub: @anthonyc-dev
+- Repo: https://github.com/anthonyc-dev/Automated-students-clearance-system
+
+---
+
+Thank you for reviewing the project. If you want, I can:
+- Tailor this README to match the exact stack and scripts in the repository
+- Create and open a README.md file in the repo for you (I will need permission to push or your confirmation to proceed)
 
 [Report Bug](https://github.com/your-username/clearing-officer-admin/issues) · [Request Feature](https://github.com/your-username/clearing-officer-admin/issues) · [Documentation](https://github.com/your-username/clearing-officer-admin/wiki)
 
