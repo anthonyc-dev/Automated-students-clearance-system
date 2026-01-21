@@ -1,9 +1,15 @@
 
 # Automated Students Clearance System
 
-![Login Page Screenshot](./public/Screenshot 2025-11-11 211959.png)
-![Dashboard Screenshot](./public/Screenshot 2025-11-11 212208.png)
-![Dashboard Screenshot](./public/Screenshot 2025-11-11 212253.png)
+## Login Page
+![Login Page](public/Screenshot%202025-11-11%20211959.png)
+
+## Dashboard
+![Dashboard](public/Screenshot%202025-11-11%20212208.png)
+
+## Dashboard – Details
+![Dashboard Details](public/Screenshot%202025-11-11%20212253.png)
+
 
 A backend server that supports the Automated Students Clearance System a tool to manage student clearance workflows, roles, and approvals for educational institutions. This repository serves as the server component for an authentication/authorization template used across projects.
 
