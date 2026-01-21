@@ -4,7 +4,7 @@
 ## Dashboard
 ![Dashboard](public/Screenshot%202025-11-11%20212208.png)
 
-## Login Page
+## Requirements
 ![Login Page](public/Screenshot%202025-11-11%20211959.png)
 
 ## Student list
