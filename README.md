@@ -4,7 +4,7 @@
 A backend server that supports the Automated Students Clearance System a tool to manage student clearance workflows, roles, and approvals for educational institutions. This repository serves as the server component for an authentication/authorization template used across projects.
 
 Important: This is the anthonyc-dev/auth-templat server you can view the auth template repository here: [Backend](https://github.com/anthonyc-dev/auth-template).  
-Repository: [anthonyc-dev/Automated-students-clearance-system](https://github.com/anthonyc-dev/Automated-students-clearance-system)
+Repository: [Frontend](https://github.com/anthonyc-dev/Automated-students-clearance-system)
 
 ---
 
