@@ -64,7 +64,7 @@ This server is intended to be used together with a frontend portal and can be ad
 ---
 
 ## Tech stack
-(Adjust these to match the actual implementation in the repo)
+
 - Node.js 
 - Express 
 - TypeScript 
