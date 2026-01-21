@@ -1,9 +1,9 @@
 
 # Automated Students Clearance System
 
-A backend server that supports the Automated Students Clearance System — a tool to manage student clearance workflows, roles, and approvals for educational institutions. This repository serves as the server component for an authentication/authorization template used across projects.
+A backend server that supports the Automated Students Clearance System a tool to manage student clearance workflows, roles, and approvals for educational institutions. This repository serves as the server component for an authentication/authorization template used across projects.
 
-Important: This is the anthonyc-dev/auth-templat server — you can view the auth template repository here: [Backend](https://github.com/anthonyc-dev/auth-template).  
+Important: This is the anthonyc-dev/auth-templat server you can view the auth template repository here: [Backend](https://github.com/anthonyc-dev/auth-template).  
 Repository: [anthonyc-dev/Automated-students-clearance-system](https://github.com/anthonyc-dev/Automated-students-clearance-system)
 
 ---
@@ -27,8 +27,6 @@ Repository: [anthonyc-dev/Automated-students-clearance-system](https://github.co
 - [Authentication](#authentication)
 - [Deployment](#deployment)
 - [For HR or Visitors](#for-hr-or-visitors)
-- [Contributing](#contributing)
-- [License & Contact](#license--contact)
 
 ---
 
@@ -39,7 +37,7 @@ The Automated Students Clearance System server exposes RESTful endpoints to:
 - Authenticate users and assign roles (student, admin, HR, department officer)
 - Send notifications or provide data for frontend dashboards
 
-This server is intended to be used together with a frontend portal and can be adapted to different authentication templates — notably the anthonyc-dev/auth-templat repository referenced above.
+This server is intended to be used together with a frontend portal and can be adapted to different authentication templates notably the anthonyc-dev/auth-templat repository referenced above.
 
 ---
 
@@ -146,7 +144,7 @@ If using the anthonyc-dev/auth-templat as a base, follow its conventions for tok
 ---
 
 ## For HR or Visitors
-Hello HR / Visitor — this repository contains the server-side logic for the Automated Students Clearance System. If you are reviewing this for hiring, audit, or evaluation:
+Hello HR / Visitor  this repository contains the server-side logic for the Automated Students Clearance System. If you are reviewing this for hiring, audit, or evaluation:
 - The server exposes role-protected APIs for user and clearance management.
 - The project pairs with front-end applications and the anthonyc-dev/auth-templat repo for authentication patterns.
 - You can view the authentication template and supporting code here: [Backend](https://github.com/anthonyc-dev/auth-template).  
@@ -156,8 +154,6 @@ If you need, I can provide:
 - Deployment artifacts (Docker Compose, Kubernetes manifests)
 
 ---
-
-
 
 @Anthony
 </div>
