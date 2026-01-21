@@ -1,13 +1,13 @@
 
 # Automated Students Clearance System
 
-## Login Page
-![Login Page](public/Screenshot%202025-11-11%20211959.png)
-
 ## Dashboard
 ![Dashboard](public/Screenshot%202025-11-11%20212208.png)
 
-## Dashboard – Details
+## Login Page
+![Login Page](public/Screenshot%202025-11-11%20211959.png)
+
+## Student list
 ![Dashboard Details](public/Screenshot%202025-11-11%20212253.png)
 
 
