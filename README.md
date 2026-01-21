@@ -157,25 +157,7 @@ If you need, I can provide:
 
 ---
 
-## Contributing
-Contributions are welcome. Typical flow:
-1. Fork the repo
-2. Create a feature branch
-3. Run tests and linters
-4. Open a pull request with a clear description of changes
 
-Please follow the existing code style and include tests for new functionality.
-
----
-
-## License & Contact
-Specify the project license in LICENSE file (e.g., MIT).
-
-Maintainer / Contact:
-- GitHub: @anthonyc-dev
-- Repo: https://github.com/anthonyc-dev/Automated-students-clearance-system
-
----
 
 @Anthony
 </div>
