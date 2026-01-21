@@ -65,10 +65,10 @@ This server is intended to be used together with a frontend portal and can be ad
 
 ## Tech stack
 (Adjust these to match the actual implementation in the repo)
-- Node.js (LTS)
-- Express (or your preferred Node framework)
-- TypeScript (recommended)
-- PostgreSQL (or another relational database)
+- Node.js 
+- Express 
+- TypeScript 
+- MongoDB
 - JWT for authentication
 - Docker & Docker Compose
 
